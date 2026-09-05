@@ -51,8 +51,7 @@ export default function SearchProfileChat({ onFinalized }: Props) {
     }
   }
 
-  function handleSend(e: React.FormEvent) {
-    e.preventDefault();
+  function handleSend() {
     const text = input.trim();
     if (!text || loading) return;
     const nextMessages: ChatMessage[] = [...messages, { role: "user", content: text }];
@@ -130,18 +129,28 @@ export default function SearchProfileChat({ onFinalized }: Props) {
 
       {error && <p className="text-sm text-red-700 px-3 pt-2">{error}</p>}
 
-      <form onSubmit={handleSend} className="flex gap-2 p-3 border-t border-slate-200 bg-white">
+      {/* Pas de <form> ici : ce composant est rendu a l'interieur du grand
+          formulaire de la page Criteres, et un <form> imbrique fait
+          remonter l'evenement "submit" au formulaire parent (rechargement
+          de page, perte de l'etat local du chat). */}
+      <div className="flex gap-2 p-3 border-t border-slate-200 bg-white">
         <input
           className="input"
           placeholder="Ta réponse..."
           value={input}
           onChange={(e) => setInput(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && !e.shiftKey) {
+              e.preventDefault();
+              handleSend();
+            }
+          }}
           disabled={loading}
         />
-        <button type="submit" className="btn-primary" disabled={loading || !input.trim()}>
+        <button type="button" className="btn-primary" onClick={handleSend} disabled={loading || !input.trim()}>
           Envoyer
         </button>
-      </form>
+      </div>
 
       <div className="flex items-center gap-3 p-3 border-t border-slate-200 bg-white">
         <button
