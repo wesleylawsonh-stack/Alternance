@@ -1,0 +1,64 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// Singleton row (id is always "singleton") holding the user's profile + CV.
+model Profile {
+  id         String   @id @default("singleton")
+  fullName   String?
+  email      String?
+  phone      String?
+  location   String?
+  headline   String?
+  summary    String?
+  linkedin   String?
+  cvFileName String?
+  cvRawText  String?
+  cvSkills   String? // JSON string[]
+  cvSections String? // JSON { experiences: [...], education: [...], languages: [...] }
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+// Singleton row (id is always "singleton") holding job-search criteria.
+model Criteria {
+  id              String   @id @default("singleton")
+  jobTitles       String? // JSON string[]
+  locations       String? // JSON string[]
+  contractTypes   String? // JSON string[] e.g. ["Alternance", "Stage"]
+  remote          Boolean  @default(false)
+  keywords        String? // JSON string[] must-have keywords boosting the score
+  excludeKeywords String? // JSON string[] keywords that disqualify an offer
+  minSalary       Int?
+  radiusKm        Int?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model Offer {
+  id                   String    @id @default(cuid())
+  title                String
+  company              String?
+  location             String?
+  url                  String?
+  description          String
+  contractType         String?
+  source               String    @default("manual") // manual | france_travail
+  externalId           String?   @unique
+  requiredSkills       String? // JSON string[] extracted from the description
+  matchScore           Float? // 0-100
+  matchedSkills        String? // JSON string[]
+  missingSkills        String? // JSON string[]
+  applicationStatus    String    @default("NOT_APPLIED") // NOT_APPLIED | APPLIED | INTERVIEW | OFFER | REJECTED
+  adaptedCvText        String?
+  adaptedCvGeneratedAt DateTime?
+  postedAt             DateTime?
+  fetchedAt            DateTime  @default(now())
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+}
