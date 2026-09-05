@@ -11,7 +11,12 @@ d'emploi/alternance :
   contrat, mots-clés bonus/exclusion.
 - **Offres** : ajout manuel ou récupération automatique (API France
   Travail), avec un **score de compatibilité en %** entre le CV et chaque
-  offre, et le détail des **compétences manquantes**.
+  offre, et le détail des **compétences manquantes**. Chaque carte affiche
+  le logo de l'entreprise (si fourni par la source), la date de publication
+  et la source, avec des actions rapides (Voir l'offre, Voir le matching,
+  Adapter mon CV, Postuler, Ignorer). **Filtres** disponibles : score
+  minimum, entreprise, lieu, date de publication, statut de candidature,
+  source.
 - **Matching pondéré multi-critères** : le score combine les compétences du
   dictionnaire, le chevauchement de vocabulaire CV/offre, et des critères
   "durs" qui pénalisent fortement le score s'ils ne sont pas respectés :

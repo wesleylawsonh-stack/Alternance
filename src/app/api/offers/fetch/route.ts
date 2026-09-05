@@ -73,6 +73,7 @@ export async function POST() {
       data: {
         title: ext.title,
         company: ext.company,
+        companyLogoUrl: ext.companyLogoUrl,
         location: ext.location,
         url: ext.url,
         description: ext.description,

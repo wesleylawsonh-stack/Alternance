@@ -63,6 +63,7 @@ model Offer {
   id                   String    @id @default(cuid())
   title                String
   company              String?
+  companyLogoUrl       String? // logo de l'entreprise si fourni par la source
   location             String?
   url                  String?
   description          String

@@ -14,6 +14,7 @@ export type ExternalOffer = {
   externalId: string;
   title: string;
   company: string | null;
+  companyLogoUrl: string | null;
   location: string | null;
   url: string | null;
   description: string;
@@ -101,7 +102,7 @@ export async function fetchFranceTravailOffers(
     resultats?: Array<{
       id: string;
       intitule: string;
-      entreprise?: { nom?: string };
+      entreprise?: { nom?: string; logo?: string };
       lieuTravail?: { libelle?: string };
       description?: string;
       typeContratLibelle?: string;
@@ -114,6 +115,7 @@ export async function fetchFranceTravailOffers(
     externalId: `france_travail:${o.id}`,
     title: o.intitule,
     company: o.entreprise?.nom ?? null,
+    companyLogoUrl: o.entreprise?.logo ?? null,
     location: o.lieuTravail?.libelle ?? null,
     url: o.origineOffre?.urlOrigine ?? null,
     description: o.description ?? "",

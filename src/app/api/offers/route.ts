@@ -6,8 +6,33 @@ import { serializeOffer } from "@/lib/serialize";
 
 const EMPTY_SECTIONS = { summary: null, experiences: [] as string[], education: [] as string[], languages: [] as string[] };
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const params = req.nextUrl.searchParams;
+
+  const minScore = params.get("minScore");
+  const company = params.get("company");
+  const location = params.get("location");
+  const status = params.get("status");
+  const source = params.get("source");
+  const postedAfter = params.get("postedAfter");
+
+  const where: Record<string, unknown> = {};
+  if (minScore) where.matchScore = { gte: Number(minScore) };
+  if (company) where.company = { contains: company, mode: "insensitive" };
+  if (location) where.location = { contains: location, mode: "insensitive" };
+  if (status && status !== "ALL") where.applicationStatus = status;
+  if (source && source !== "ALL") where.source = source;
+  if (postedAfter) {
+    const date = new Date(postedAfter);
+    if (!isNaN(date.getTime())) {
+      // Filtre sur la date de publication quand elle est connue, sinon sur
+      // la date de recuperation (offres ajoutees manuellement sans date).
+      where.OR = [{ postedAt: { gte: date } }, { AND: [{ postedAt: null }, { fetchedAt: { gte: date } }] }];
+    }
+  }
+
   const offers = await prisma.offer.findMany({
+    where,
     orderBy: [{ matchScore: "desc" }, { fetchedAt: "desc" }],
   });
   return NextResponse.json({ offers: offers.map(serializeOffer) });

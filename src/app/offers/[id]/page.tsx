@@ -6,15 +6,23 @@ import ScoreBadge from "@/components/ScoreBadge";
 import RecommendationBadge from "@/components/RecommendationBadge";
 import StatusSelect from "@/components/StatusSelect";
 
+const SOURCE_LABELS: Record<string, string> = {
+  manual: "Ajout manuel",
+  france_travail: "France Travail",
+};
+
 type Offer = {
   id: string;
   title: string;
   company: string | null;
+  companyLogoUrl: string | null;
   location: string | null;
   url: string | null;
   description: string;
   contractType: string | null;
   source: string;
+  postedAt: string | null;
+  fetchedAt: string;
   matchScore: number | null;
   matchedSkills: unknown;
   missingSkills: unknown;
@@ -99,11 +107,28 @@ export default function OfferDetailPage({ params }: { params: Promise<{ id: stri
 
       <div className="card p-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-semibold text-slate-900">{offer.title}</h1>
-            <p className="text-slate-500 mt-1">
-              {[offer.company, offer.location, offer.contractType].filter(Boolean).join(" · ") || "—"}
-            </p>
+          <div className="flex gap-3">
+            {offer.companyLogoUrl ? (
+              <img
+                src={offer.companyLogoUrl}
+                alt=""
+                className="w-12 h-12 rounded-lg object-contain bg-slate-50 border border-slate-100 shrink-0"
+              />
+            ) : (
+              <div className="w-12 h-12 rounded-lg bg-slate-100 text-slate-400 flex items-center justify-center text-base font-semibold shrink-0">
+                {(offer.company || offer.title).slice(0, 1).toUpperCase()}
+              </div>
+            )}
+            <div>
+              <h1 className="text-2xl font-semibold text-slate-900">{offer.title}</h1>
+              <p className="text-slate-500 mt-1">
+                {[offer.company, offer.location, offer.contractType].filter(Boolean).join(" · ") || "—"}
+              </p>
+              <p className="text-xs text-slate-400 mt-1">
+                Publiee le {new Date(offer.postedAt ?? offer.fetchedAt).toLocaleDateString("fr-FR")} · Source :{" "}
+                {SOURCE_LABELS[offer.source] ?? offer.source}
+              </p>
+            </div>
           </div>
           <div className="flex flex-col items-end gap-2">
             <div className="flex items-center gap-2">
