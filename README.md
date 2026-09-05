@@ -128,7 +128,10 @@ continu quelque part et qu'une tache planifiee appelle
 `POST /api/gmail/sync`. Plusieurs options :
 
 - **Vercel Cron** : ce depot contient deja un `vercel.json` avec une tache
-  planifiee horaire. Si tu deploies sur Vercel, definis une variable
+  planifiee quotidienne (6h du matin). Le plan gratuit "Hobby" de Vercel
+  limite les cron jobs a une execution par jour maximum ; passe a une
+  frequence plus rapprochee (ex: toutes les heures, `0 * * * *`) uniquement
+  si tu passes au plan Pro. Si tu deploies sur Vercel, definis une variable
   d'environnement `CRON_SECRET` (n'importe quelle chaine aleatoire) dans les
   parametres du projet Vercel — Vercel l'enverra automatiquement en
   en-tete `Authorization: Bearer <CRON_SECRET>` a chaque declenchement.
