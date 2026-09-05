@@ -8,6 +8,13 @@
 // "sandbox" s'obtient automatiquement depuis l'espace developpeurs ; une
 // cle "production" necessite une demande par email a
 // support_api@apprentissage.beta.gouv.fr. Voir README pour la procedure.
+//
+// L'API reelle est montee sous le prefixe "/api" du domaine (confirme par
+// la doc "Environnements : production et sandbox", qui precise de cibler
+// https://api.apprentissage.beta.gouv.fr/api dans les deux cas) : le
+// domaine racine sans ce prefixe sert l'app web (SPA) de La bonne
+// alternance et renvoie son HTML pour toute route non reconnue, d'ou le
+// controle "reponse non-JSON" plus bas qui a permis de detecter l'erreur.
 
 import type { ExternalOffer } from "./franceTravail";
 import { geocode } from "./geocode";
@@ -18,7 +25,7 @@ export type LbaCriteria = {
   radiusKm: number | null;
 };
 
-const SEARCH_URL = "https://api.apprentissage.beta.gouv.fr/job/v1/search";
+const SEARCH_URL = "https://api.apprentissage.beta.gouv.fr/api/job/v1/search";
 
 export function isLbaConfigured(): boolean {
   return Boolean(process.env.LBA_API_KEY);
