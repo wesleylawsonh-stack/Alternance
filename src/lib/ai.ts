@@ -144,9 +144,10 @@ export async function proposeCvEditsWithAi(input: ProposeCvEditsInput): Promise<
   const message = await anthropic.messages.create({
     model: process.env.ANTHROPIC_MODEL || "claude-sonnet-5",
     max_tokens: 2500,
+    thinking: { type: "disabled" },
     system: EDIT_SYSTEM_PROMPT,
     messages: [{ role: "user", content: buildEditUserPrompt(input) }],
-  });
+  } as Anthropic.MessageCreateParamsNonStreaming);
 
   const textBlock = message.content.find((b) => b.type === "text");
   if (!textBlock || textBlock.type !== "text") throw new Error("Reponse IA vide");
@@ -268,6 +269,7 @@ export async function suggestHeadlineWithAi(cv: ParsedCv): Promise<string> {
   const message = await anthropic.messages.create({
     model: process.env.ANTHROPIC_MODEL || "claude-sonnet-5",
     max_tokens: 100,
+    thinking: { type: "disabled" },
     system: HEADLINE_SYSTEM_PROMPT,
     messages: [
       {
@@ -280,7 +282,7 @@ ${cv.rawText}
 Competences deja detectees dans ce CV : ${cv.skills.join(", ") || "aucune"}`,
       },
     ],
-  });
+  } as Anthropic.MessageCreateParamsNonStreaming);
 
   const textBlock = message.content.find((b) => b.type === "text");
   if (!textBlock || textBlock.type !== "text") {
@@ -363,6 +365,7 @@ export async function generateApplicationMessageWithAi(input: ApplicationMessage
   const message = await anthropic.messages.create({
     model: process.env.ANTHROPIC_MODEL || "claude-sonnet-5",
     max_tokens: 400,
+    thinking: { type: "disabled" },
     system: APPLICATION_MESSAGE_SYSTEM_PROMPT,
     messages: [
       {
@@ -384,7 +387,7 @@ Accroche actuelle du CV : ${input.headline || "aucune"}
 Nom complet du candidat (pour la signature) : ${input.fullName || "non renseigne"}`,
       },
     ],
-  });
+  } as Anthropic.MessageCreateParamsNonStreaming);
 
   const textBlock = message.content.find((b) => b.type === "text");
   if (!textBlock || textBlock.type !== "text") {
@@ -463,6 +466,7 @@ export async function classifyApplicationEmailWithAi(params: {
     const message = await anthropic.messages.create({
       model: process.env.ANTHROPIC_MODEL || "claude-sonnet-5",
       max_tokens: 10,
+      thinking: { type: "disabled" },
       system: CLASSIFY_SYSTEM_PROMPT,
       messages: [
         {
@@ -479,7 +483,7 @@ ${params.bodyExcerpt}
 """`,
         },
       ],
-    });
+    } as Anthropic.MessageCreateParamsNonStreaming);
 
     const textBlock = message.content.find((b) => b.type === "text");
     if (!textBlock || textBlock.type !== "text") return null;
@@ -662,9 +666,10 @@ ${cv.rawText}
   const message = await anthropic.messages.create({
     model: process.env.ANTHROPIC_MODEL || "claude-sonnet-5",
     max_tokens: 1200,
+    thinking: { type: "disabled" },
     system: SCORE_SYSTEM_PROMPT,
     messages: [{ role: "user", content: userPrompt }],
-  });
+  } as Anthropic.MessageCreateParamsNonStreaming);
 
   const textBlock = message.content.find((b) => b.type === "text");
   if (!textBlock || textBlock.type !== "text") throw new Error("Reponse IA vide");
