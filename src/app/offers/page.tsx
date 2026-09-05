@@ -76,10 +76,13 @@ export default function OffersPage() {
           <h1 className="text-2xl font-semibold text-slate-900">Offres</h1>
           <p className="text-slate-500 mt-1">Triees par score de compatibilite avec ton CV.</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           <button className="btn-secondary" onClick={() => setShowAddForm((v) => !v)}>
             {showAddForm ? "Annuler" : "+ Ajouter une offre"}
           </button>
+          <a className="btn-secondary" href="/api/offers/export">
+            Exporter en Excel
+          </a>
           <button className="btn-primary" onClick={handleFetchOffers} disabled={fetching}>
             {fetching ? "Recuperation..." : "Recuperer des offres"}
           </button>

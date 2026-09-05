@@ -157,3 +157,62 @@ export async function adaptCv(input: AdaptCvInput): Promise<{ text: string; used
   }
   return { text: adaptCvWithTemplate(input), usedAi: false };
 }
+
+export type EmailClassification = "APPLIED" | "INTERVIEW" | "OFFER" | "REJECTED" | null;
+
+const CLASSIFY_SYSTEM_PROMPT = `Tu analyses un email recu dans le cadre d'une recherche d'emploi/alternance,
+en lien avec une candidature deja envoyee a une entreprise precise. Determine
+si cet email indique un changement de statut de cette candidature.
+Reponds UNIQUEMENT avec un seul mot parmi :
+- REJECTED (refus / candidature non retenue)
+- INTERVIEW (proposition ou confirmation d'un entretien)
+- OFFER (proposition d'embauche / offre de contrat / felicitations pour le poste)
+- APPLIED (simple accuse de reception, rien de plus)
+- NONE (email sans rapport avec un changement de statut de candidature, ou ambigu)
+Ne reponds jamais autre chose qu'un seul de ces cinq mots.`;
+
+export async function classifyApplicationEmailWithAi(params: {
+  companyName: string | null;
+  offerTitle: string;
+  subject: string;
+  from: string;
+  bodyExcerpt: string;
+}): Promise<EmailClassification> {
+  if (!isAiEnabled()) return null;
+
+  try {
+    const anthropic = getClient();
+    const message = await anthropic.messages.create({
+      model: process.env.ANTHROPIC_MODEL || "claude-sonnet-5",
+      max_tokens: 10,
+      system: CLASSIFY_SYSTEM_PROMPT,
+      messages: [
+        {
+          role: "user",
+          content: `Candidature concernee : poste "${params.offerTitle}" chez ${
+            params.companyName ?? "entreprise inconnue"
+          }.
+
+Email recu :
+De : ${params.from}
+Objet : ${params.subject}
+Extrait : """
+${params.bodyExcerpt}
+"""`,
+        },
+      ],
+    });
+
+    const textBlock = message.content.find((b) => b.type === "text");
+    if (!textBlock || textBlock.type !== "text") return null;
+    const label = textBlock.text.trim().toUpperCase();
+
+    if (label === "REJECTED" || label === "INTERVIEW" || label === "OFFER" || label === "APPLIED") {
+      return label;
+    }
+    return null;
+  } catch (err) {
+    console.error("Classification IA de l'email impossible:", err);
+    return null;
+  }
+}

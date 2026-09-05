@@ -19,6 +19,7 @@ type Offer = {
   missingSkills: unknown;
   requiredSkills: unknown;
   applicationStatus: string;
+  comments: string | null;
   adaptedCvText: string | null;
   adaptedCvGeneratedAt: string | null;
 };
@@ -30,12 +31,16 @@ export default function OfferDetailPage({ params }: { params: Promise<{ id: stri
   const [adapting, setAdapting] = useState(false);
   const [adaptError, setAdaptError] = useState<string | null>(null);
   const [adaptInfo, setAdaptInfo] = useState<string | null>(null);
+  const [comments, setComments] = useState("");
+  const [savingComments, setSavingComments] = useState(false);
+  const [commentsSaved, setCommentsSaved] = useState(false);
 
   function load() {
     fetch(`/api/offers/${id}`)
       .then((r) => r.json())
       .then((data) => {
         setOffer(data.offer ?? null);
+        setComments(data.offer?.comments ?? "");
         setLoading(false);
       });
   }
@@ -70,6 +75,19 @@ export default function OfferDetailPage({ params }: { params: Promise<{ id: stri
     } finally {
       setAdapting(false);
     }
+  }
+
+  async function handleSaveComments() {
+    setSavingComments(true);
+    setCommentsSaved(false);
+    await fetch(`/api/offers/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ comments }),
+    });
+    setSavingComments(false);
+    setCommentsSaved(true);
+    setTimeout(() => setCommentsSaved(false), 2500);
   }
 
   if (loading) return <p className="text-slate-500">Chargement...</p>;
@@ -144,6 +162,23 @@ export default function OfferDetailPage({ params }: { params: Promise<{ id: stri
       <div className="card p-6">
         <h2 className="font-medium text-slate-900 mb-3">Description de l&apos;offre</h2>
         <p className="text-sm text-slate-700 whitespace-pre-wrap">{offer.description}</p>
+      </div>
+
+      <div className="card p-6">
+        <h2 className="font-medium text-slate-900 mb-3">Commentaires</h2>
+        <textarea
+          className="input"
+          rows={5}
+          placeholder="Notes personnelles, suivi de la candidature... (les mises a jour automatiques detectees par mail Gmail sont aussi journalisees ici)"
+          value={comments}
+          onChange={(e) => setComments(e.target.value)}
+        />
+        <div className="flex items-center gap-3 mt-3">
+          <button className="btn-secondary" onClick={handleSaveComments} disabled={savingComments}>
+            {savingComments ? "Enregistrement..." : "Enregistrer les commentaires"}
+          </button>
+          {commentsSaved && <span className="text-sm text-green-700">Enregistre.</span>}
+        </div>
       </div>
 
       <div className="card p-6">

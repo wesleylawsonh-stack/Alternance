@@ -15,12 +15,15 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   const { id } = await params;
   const body = await req.json();
 
-  const data: { applicationStatus?: string } = {};
+  const data: { applicationStatus?: string; comments?: string | null } = {};
   if (typeof body.applicationStatus === "string") {
     if (!VALID_STATUSES.includes(body.applicationStatus)) {
       return NextResponse.json({ error: "Statut de candidature invalide." }, { status: 400 });
     }
     data.applicationStatus = body.applicationStatus;
+  }
+  if (typeof body.comments === "string") {
+    data.comments = body.comments;
   }
 
   try {

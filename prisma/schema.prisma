@@ -55,10 +55,40 @@ model Offer {
   matchedSkills        String? // JSON string[]
   missingSkills        String? // JSON string[]
   applicationStatus    String    @default("NOT_APPLIED") // NOT_APPLIED | APPLIED | INTERVIEW | OFFER | REJECTED
+  comments             String? // notes libres + journal des mises a jour automatiques (Gmail)
   adaptedCvText        String?
   adaptedCvGeneratedAt DateTime?
   postedAt             DateTime?
   fetchedAt            DateTime  @default(now())
   createdAt            DateTime  @default(now())
   updatedAt            DateTime  @updatedAt
+
+  processedEmails ProcessedEmail[]
+}
+
+// Singleton row (id is always "singleton") : compte Gmail connecte en OAuth
+// (lecture seule) pour detecter automatiquement les reponses aux candidatures.
+model GmailAccount {
+  id                 String    @id @default("singleton")
+  email              String?
+  refreshToken       String
+  accessToken        String?
+  accessTokenExpiry  DateTime?
+  historyId          String? // utilise pour ne relire que les nouveaux messages
+  connectedAt        DateTime  @default(now())
+  lastSyncAt         DateTime?
+  lastSyncError      String?
+}
+
+// Garde une trace des emails deja traites pour ne jamais les analyser deux fois.
+model ProcessedEmail {
+  id               String   @id @default(cuid())
+  messageId        String   @unique
+  offerId          String?
+  offer            Offer?   @relation(fields: [offerId], references: [id], onDelete: SetNull)
+  matchedCompany   String?
+  detectedStatus   String? // statut applique automatiquement, si detecte
+  subject          String?
+  snippet          String?
+  processedAt      DateTime @default(now())
 }
