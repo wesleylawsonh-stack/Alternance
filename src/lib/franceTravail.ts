@@ -113,12 +113,14 @@ export async function fetchFranceTravailOffers(
 
   const params = new URLSearchParams();
   if (criteria.jobTitles.length) params.set("motsCles", criteria.jobTitles.join(" "));
-  if (criteria.locations.length) params.set("commune", criteria.locations[0]);
 
-  // Pas de filtre typeContrat cote API : les codes exacts attendus par
-  // France Travail sont incertains (un mauvais code fait echouer TOUTE la
-  // requete avec un 400). Le matching local (computeWeightedMatch) penalise
-  // deja fortement un type de contrat incompatible, donc filtrer ici
+  // Pas de filtre commune/typeContrat cote API : "commune" attend un code
+  // INSEE (pas un nom de ville en texte libre - "Paris" en tant que valeur
+  // provoque une erreur 400 "Valeur du parametre commune incorrecte"), et
+  // les codes exacts attendus par typeContrat sont incertains (un mauvais
+  // code fait echouer TOUTE la requete avec un 400). Le matching local
+  // (computeWeightedMatch, avec geocodage) penalise deja une localisation
+  // ou un type de contrat incompatible, donc filtrer ici cote API
   // n'apporterait qu'un risque de casse pour un gain marginal.
 
   params.set("range", `0-${Math.max(0, limit - 1)}`);
