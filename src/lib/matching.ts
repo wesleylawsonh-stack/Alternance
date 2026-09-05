@@ -26,6 +26,7 @@ export type MatchCriteria = {
   remote: boolean;
   excludeKeywords: string[];
   keywords: string[];
+  searchDescription: string | null;
 };
 
 export type MatchOfferInfo = {
@@ -109,12 +110,40 @@ function detectSeniorityRequirement(text: string): "senior" | "confirme" | null 
   return null;
 }
 
+// Les intitules de contrat "grand public" (Alternance) ne correspondent pas
+// toujours aux libelles bruts renvoyes par les sources d'offres (France
+// Travail/Adzuna parlent de "Contrat d'apprentissage" ou "Contrat de
+// professionnalisation", jamais litteralement "Alternance"). Sans ce
+// regroupement par synonymes, une simple comparaison de sous-chaine
+// penalise a tort quasiment toutes les vraies offres d'alternance.
+const CONTRACT_TYPE_SYNONYMS: Record<string, string[]> = {
+  alternance: ["alternance", "apprentissage", "apprenti", "professionnalisation"],
+  stage: ["stage", "stagiaire"],
+  cdi: ["cdi"],
+  cdd: ["cdd"],
+  interim: ["interim", "interimaire", "mission"],
+};
+
+function contractTypeGroup(text: string): string | null {
+  const normalized = normalizeText(text);
+  for (const [group, synonyms] of Object.entries(CONTRACT_TYPE_SYNONYMS)) {
+    if (synonyms.some((s) => normalized.includes(s))) return group;
+  }
+  return null;
+}
+
 function contractTypeOk(offerContractType: string | null, criteriaContractTypes: string[]): boolean {
   if (!offerContractType || criteriaContractTypes.length === 0) return true;
-  const normalized = normalizeText(offerContractType);
+  const offerNormalized = normalizeText(offerContractType);
+  const offerGroup = contractTypeGroup(offerContractType);
+
   return criteriaContractTypes.some((c) => {
+    const criteriaGroup = contractTypeGroup(c);
+    if (offerGroup && criteriaGroup) return offerGroup === criteriaGroup;
+    // Repli sur la comparaison textuelle brute si l'un des deux libelles ne
+    // correspond a aucun groupe connu (intitule personnalise/inattendu).
     const cn = normalizeText(c);
-    return normalized.includes(cn) || cn.includes(normalized);
+    return offerNormalized.includes(cn) || cn.includes(offerNormalized);
   });
 }
 
@@ -161,6 +190,7 @@ const EMPTY_CRITERIA: MatchCriteria = {
   remote: false,
   excludeKeywords: [],
   keywords: [],
+  searchDescription: null,
 };
 
 /**
@@ -214,6 +244,16 @@ export async function computeWeightedMatch(
     const descLower = offer.description.toLowerCase();
     const hits = criteria.keywords.filter((k) => k.trim() && descLower.includes(k.trim().toLowerCase())).length;
     score = Math.min(100, score + Math.min(10, hits * 3));
+  }
+
+  // Description libre de ce que l'utilisateur recherche : chevauchement de
+  // vocabulaire avec l'offre, meme logique que le contenu du CV, mais bonus
+  // plafonne separement pour ne pas ecraser les autres signaux.
+  const searchDescriptionOverlap = criteria.searchDescription
+    ? computeContentOverlap(criteria.searchDescription, offer.description)
+    : 0;
+  if (searchDescriptionOverlap > 0) {
+    score = Math.min(100, score + Math.round(searchDescriptionOverlap * 0.08));
   }
   score = Math.max(0, Math.min(100, score));
 
@@ -305,6 +345,7 @@ export function buildMatchCriteria(criteria: Criteria | null | undefined): Match
     remote: criteria.remote,
     excludeKeywords: asStringArray(criteria.excludeKeywords),
     keywords: asStringArray(criteria.keywords),
+    searchDescription: criteria.searchDescription ?? null,
   };
 }
 

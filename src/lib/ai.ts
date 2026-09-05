@@ -49,6 +49,7 @@ export type ProposeCvEditsInput = {
   cv: ParsedCv;
   currentHeadline: string | null;
   offer?: { title: string; company: string | null; description: string } | null;
+  searchDescription?: string | null;
 };
 
 const EDIT_SYSTEM_PROMPT = `Tu es un editeur de CV assiste par IA. Tu proposes des ameliorations de
@@ -74,7 +75,7 @@ changement. Si tu n'as aucune amelioration a proposer, reponds avec un
 tableau vide [].`;
 
 function buildEditUserPrompt(input: ProposeCvEditsInput): string {
-  const { cv, offer, currentHeadline } = input;
+  const { cv, offer, currentHeadline, searchDescription } = input;
   const experiencesList = cv.sections.experiences
     .map((exp, i) => `experience-${i}: ${exp}`)
     .join("\n");
@@ -90,6 +91,17 @@ Texte brut complet du CV (contexte) :
 """
 ${cv.rawText}
 """`;
+
+  if (searchDescription) {
+    prompt += `
+
+CE QUE LE CANDIDAT RECHERCHE (contexte donne par lui-meme, a prendre en
+compte pour orienter le ton et les elements mis en avant - ne sert JAMAIS
+de source pour ajouter une information au CV) :
+"""
+${searchDescription}
+"""`;
+  }
 
   if (offer) {
     prompt += `

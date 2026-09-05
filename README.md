@@ -13,8 +13,14 @@ d'emploi/alternance :
 - **CV** : le texte du PDF est extrait et analysé pour en tirer les
   compétences (dictionnaire de mots-clés) et les sections (profil,
   expériences, formation, langues).
-- **Critères de recherche** : intitulés de poste, localisations, types de
-  contrat, mots-clés bonus/exclusion.
+- **Critères de recherche** : une **description libre** de ce que tu
+  recherches (utilisée en plus des critères structurés pour affiner le
+  score de matching et donner du contexte à l'IA lors de l'adaptation de
+  CV), intitulés de poste, localisations, types de contrat, mots-clés
+  bonus/exclusion. Le type de contrat compare par groupes de synonymes
+  (ex: "Alternance" reconnaît aussi "Contrat d'apprentissage"/"Contrat de
+  professionnalisation", les libellés réels utilisés par les sources
+  d'offres) plutôt qu'une simple sous-chaîne exacte.
 - **Offres** : ajout manuel ou récupération automatique depuis plusieurs
   **sources légales à API officielle** (France Travail, Adzuna — jamais de
   scraping de LinkedIn/Indeed/Welcome to the Jungle, contraire à leurs

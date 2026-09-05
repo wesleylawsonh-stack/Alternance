@@ -56,6 +56,7 @@ model Criteria {
   excludeKeywords String? // JSON string[] keywords that disqualify an offer
   minSalary       Int?
   radiusKm        Int?
+  searchDescription String? // texte libre : ce que l'utilisateur recherche, utilise pour affiner le score et l'adaptation de CV
   autoFetchEnabled Boolean @default(true) // recuperation automatique (cron) activee/desactivee
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt

@@ -10,9 +10,10 @@ export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => ({}));
   const offerId: string | undefined = typeof body.offerId === "string" ? body.offerId : undefined;
 
-  const [profile, offer] = await Promise.all([
+  const [profile, offer, criteria] = await Promise.all([
     prisma.profile.findUnique({ where: { id: "singleton" } }),
     offerId ? prisma.offer.findUnique({ where: { id: offerId } }) : Promise.resolve(null),
+    prisma.criteria.findUnique({ where: { id: "singleton" } }),
   ]);
 
   if (!profile || !profile.cvRawText) {
@@ -32,6 +33,7 @@ export async function POST(req: NextRequest) {
     cv,
     currentHeadline: profile.headline,
     offer: offer ? { title: offer.title, company: offer.company, description: offer.description } : null,
+    searchDescription: criteria?.searchDescription ?? null,
   });
 
   return NextResponse.json({

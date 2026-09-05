@@ -11,6 +11,7 @@ type Criteria = {
   excludeKeywords: string[];
   minSalary: number | null;
   radiusKm: number | null;
+  searchDescription: string;
   autoFetchEnabled: boolean;
 };
 
@@ -23,6 +24,7 @@ const EMPTY: Criteria = {
   excludeKeywords: [],
   minSalary: null,
   radiusKm: null,
+  searchDescription: "",
   autoFetchEnabled: true,
 };
 
@@ -58,6 +60,7 @@ export default function CriteriaPage() {
             excludeKeywords: data.criteria.excludeKeywords ?? [],
             minSalary: data.criteria.minSalary,
             radiusKm: data.criteria.radiusKm,
+            searchDescription: data.criteria.searchDescription ?? "",
             autoFetchEnabled: data.criteria.autoFetchEnabled ?? true,
           });
         }
@@ -101,6 +104,21 @@ export default function CriteriaPage() {
       </div>
 
       <form onSubmit={handleSave} className="card p-6 space-y-5">
+        <div>
+          <label className="label">Decris ce que tu recherches (optionnel)</label>
+          <textarea
+            className="input"
+            rows={4}
+            placeholder="Ex: Je cherche une alternance en developpement web, plutot frontend React, dans une petite structure ou startup, a Paris ou en remote partiel, rythme 3 semaines entreprise / 1 semaine ecole..."
+            value={criteria.searchDescription}
+            onChange={(e) => setCriteria({ ...criteria, searchDescription: e.target.value })}
+          />
+          <p className="text-xs text-slate-400 mt-1">
+            Utilise en complement des criteres ci-dessous pour affiner le score de matching et donner du contexte
+            a l&apos;IA lors de l&apos;adaptation de ton CV a une offre.
+          </p>
+        </div>
+
         <div>
           <label className="label">Intitules de poste recherches (separes par des virgules)</label>
           <input
