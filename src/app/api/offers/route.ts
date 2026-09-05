@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
 
   const cvSkills = asStringArray(profile?.cvSkills);
   const keywords = asStringArray(criteria?.keywords);
-  const match = computeMatch(cvSkills, description, keywords);
+  const match = computeMatch(cvSkills, description, keywords, profile?.cvRawText ?? "");
 
   const offer = await prisma.offer.create({
     data: {

@@ -15,11 +15,12 @@ export async function recomputeAllOfferScores(): Promise<number> {
   ]);
 
   const cvSkills = asStringArray(profile?.cvSkills);
+  const cvRawText = profile?.cvRawText ?? "";
   const keywords = asStringArray(criteria?.keywords);
 
   await Promise.all(
     offers.map((offer) => {
-      const match = computeMatch(cvSkills, offer.description, keywords);
+      const match = computeMatch(cvSkills, offer.description, keywords, cvRawText);
       return prisma.offer.update({
         where: { id: offer.id },
         data: {

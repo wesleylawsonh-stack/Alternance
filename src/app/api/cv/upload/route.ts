@@ -5,6 +5,7 @@ import { parseCvText } from "@/lib/cvParser";
 import { recomputeAllOfferScores } from "@/lib/recompute";
 import { toJsonString } from "@/lib/json";
 import { serializeProfile } from "@/lib/serialize";
+import { suggestHeadline } from "@/lib/ai";
 
 export async function POST(req: NextRequest) {
   const formData = await req.formData();
@@ -65,5 +66,36 @@ export async function POST(req: NextRequest) {
 
   const updatedOffers = await recomputeAllOfferScores();
 
-  return NextResponse.json({ profile: serializeProfile(profile), skillsFound: parsed.skills, updatedOffers });
+  // Propose une accroche a partir du CV : on ne l'applique automatiquement
+  // que si aucune accroche n'est deja renseignee, pour ne jamais ecraser un
+  // texte choisi par l'utilisateur.
+  let finalProfile = profile;
+  let suggestedHeadline: string | null = null;
+  let headlineUsedAi = false;
+  try {
+    const suggestion = await suggestHeadline({
+      rawText: parsed.rawText,
+      skills: parsed.skills,
+      sections: parsed.sections,
+    });
+    suggestedHeadline = suggestion.text;
+    headlineUsedAi = suggestion.usedAi;
+
+    if (suggestedHeadline && !profile.headline) {
+      finalProfile = await prisma.profile.update({
+        where: { id: "singleton" },
+        data: { headline: suggestedHeadline },
+      });
+    }
+  } catch (err) {
+    console.error("Suggestion d'accroche impossible:", err);
+  }
+
+  return NextResponse.json({
+    profile: serializeProfile(finalProfile),
+    skillsFound: parsed.skills,
+    updatedOffers,
+    suggestedHeadline,
+    headlineUsedAi,
+  });
 }

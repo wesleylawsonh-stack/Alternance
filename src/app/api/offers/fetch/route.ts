@@ -64,7 +64,7 @@ export async function POST() {
       continue;
     }
 
-    const match = computeMatch(cvSkills, ext.description, keywords);
+    const match = computeMatch(cvSkills, ext.description, keywords, profile?.cvRawText ?? "");
 
     await prisma.offer.create({
       data: {

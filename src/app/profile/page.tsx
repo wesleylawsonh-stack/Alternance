@@ -34,6 +34,8 @@ export default function ProfilePage() {
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [uploadInfo, setUploadInfo] = useState<string | null>(null);
+  const [suggestingHeadline, setSuggestingHeadline] = useState(false);
+  const [headlineError, setHeadlineError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -77,11 +79,21 @@ export default function ProfilePage() {
       if (!res.ok) {
         setUploadError(data.error || "Erreur lors de l'import du CV.");
       } else {
-        setProfile((p) => ({ ...p, cvFileName: data.profile.cvFileName, cvSkills: data.profile.cvSkills }));
+        setProfile((p) => ({
+          ...p,
+          cvFileName: data.profile.cvFileName,
+          cvSkills: data.profile.cvSkills,
+          headline: data.profile.headline,
+        }));
+        const headlineNote = data.suggestedHeadline
+          ? data.profile.headline === data.suggestedHeadline
+            ? ` Accroche suggeree automatiquement (modifiable ci-dessous).`
+            : ` Une accroche a ete suggeree, clique sur "Suggerer une accroche" pour l'utiliser.`
+          : "";
         setUploadInfo(
           `CV importe : ${data.skillsFound.length} competence(s) detectee(s). ${
             data.updatedOffers ? `${data.updatedOffers} offre(s) recalculee(s).` : ""
-          }`
+          }${headlineNote}`
         );
       }
     } catch {
@@ -89,6 +101,24 @@ export default function ProfilePage() {
     } finally {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  }
+
+  async function handleSuggestHeadline() {
+    setSuggestingHeadline(true);
+    setHeadlineError(null);
+    try {
+      const res = await fetch("/api/profile/suggest-headline", { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) {
+        setHeadlineError(data.error || "Impossible de generer une accroche.");
+      } else {
+        setProfile((p) => ({ ...p, headline: data.suggestedHeadline }));
+      }
+    } catch {
+      setHeadlineError("Erreur reseau.");
+    } finally {
+      setSuggestingHeadline(false);
     }
   }
 
@@ -149,13 +179,25 @@ export default function ProfilePage() {
               />
             </div>
             <div>
-              <label className="label">Titre / accroche</label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="label mb-0">Titre / accroche</label>
+                <button
+                  type="button"
+                  className="text-xs text-brand-600 hover:underline disabled:opacity-50"
+                  onClick={handleSuggestHeadline}
+                  disabled={suggestingHeadline || !profile.cvFileName}
+                  title={!profile.cvFileName ? "Importe d'abord ton CV" : undefined}
+                >
+                  {suggestingHeadline ? "Generation..." : "Suggerer depuis mon CV"}
+                </button>
+              </div>
               <input
                 className="input"
                 placeholder="Ex: Etudiant en informatique - Alternance dev web"
                 value={profile.headline ?? ""}
                 onChange={(e) => setProfile({ ...profile, headline: e.target.value })}
               />
+              {headlineError && <p className="text-xs text-red-600 mt-1">{headlineError}</p>}
             </div>
             <div>
               <label className="label">Email</label>

@@ -130,12 +130,33 @@ const RAW_SKILLS: SkillEntry[] = [
   { canonical: "Resolution de problemes", aliases: ["resolution de problemes", "résolution de problèmes", "problem solving"] },
 ];
 
+// Abbreviations tres frequentes dans les CV/offres en francais (ex: "R&D",
+// "H/F"). Une fois la ponctuation normalisee en espaces, "R&D" devient
+// "r d" : sans ce filtre, la lettre isolee "r" serait detectee a tort comme
+// le langage R. Cible des motifs precis (plutot qu'une regle generique sur
+// toute paire de lettres separees par & ou /) pour ne pas casser des
+// mentions legitimes comme "C/C++".
+const KNOWN_ABBREVIATIONS = [/\br\s*&\s*d\b/gi, /\bh\s*\/\s*f\b/gi, /\bf\s*\/\s*h\b/gi, /\bm\s*\/\s*f\b/gi, /\bf\s*\/\s*m\b/gi];
+
+function stripKnownAbbreviations(text: string): string {
+  return KNOWN_ABBREVIATIONS.reduce((acc, re) => acc.replace(re, " "), text);
+}
+
 function normalize(text: string): string {
-  return text
+  return stripKnownAbbreviations(text)
     .toLowerCase()
     .normalize("NFD")
     .replace(/[̀-ͯ]/g, "") // strip accents
-    .replace(/[^a-z0-9+.#/ ]/g, " ")
+    // "/" n'est PAS conserve : des alias comme "ux/ui" restent detectables
+    // via leurs alias "ux" et "ui" separes, alors que le garder cassait la
+    // detection de mentions comme "C/C++" (le "/" empechait "c++" d'etre
+    // entoure d'espaces).
+    .replace(/[^a-z0-9+.# ]/g, " ")
+    // Un point en fin de mot/phrase (ex: "...maitrise de Python.") n'est
+    // pas un separateur decimal ni un point technique (ex: "node.js",
+    // ".NET") : on ne le retire que lorsqu'il n'est suivi ni d'une lettre
+    // ni d'un chiffre.
+    .replace(/\.(?=\s|$)/g, " ")
     .replace(/\s+/g, " ")
     .trim();
 }

@@ -158,6 +158,82 @@ export async function adaptCv(input: AdaptCvInput): Promise<{ text: string; used
   return { text: adaptCvWithTemplate(input), usedAi: false };
 }
 
+const HEADLINE_SYSTEM_PROMPT = `Tu rediges une accroche professionnelle courte (une seule phrase, moins de
+120 caracteres) pour un CV, a partir du texte du CV fourni.
+REGLE ABSOLUE : n'invente, n'ajoute ni ne suppose aucune information
+(competence, experience, diplome, duree) absente du CV. Tu peux uniquement
+reformuler ou resumer ce qui est deja present dans le texte fourni.
+Reponds uniquement avec l'accroche elle-meme, sans guillemets et sans
+commentaire autour.`;
+
+export async function suggestHeadlineWithAi(cv: ParsedCv): Promise<string> {
+  const anthropic = getClient();
+
+  const message = await anthropic.messages.create({
+    model: process.env.ANTHROPIC_MODEL || "claude-sonnet-5",
+    max_tokens: 100,
+    system: HEADLINE_SYSTEM_PROMPT,
+    messages: [
+      {
+        role: "user",
+        content: `CV :
+"""
+${cv.rawText}
+"""
+
+Competences deja detectees dans ce CV : ${cv.skills.join(", ") || "aucune"}`,
+      },
+    ],
+  });
+
+  const textBlock = message.content.find((b) => b.type === "text");
+  if (!textBlock || textBlock.type !== "text") {
+    throw new Error("Reponse IA vide");
+  }
+  return textBlock.text.trim().replace(/^["'«]+|["'»]+$/g, "");
+}
+
+function truncate(text: string, maxLength: number): string {
+  if (text.length <= maxLength) return text;
+  return `${text.slice(0, maxLength - 1).trimEnd()}…`;
+}
+
+/**
+ * Suggestion d'accroche sans IA : reprend telle quelle la premiere phrase
+ * du profil/resume du CV si elle existe, sinon compose une phrase courte a
+ * partir de la formation et des competences deja detectees. Ne fabrique
+ * rien : n'assemble que du texte deja present dans le CV.
+ */
+export function suggestHeadlineWithTemplate(cv: ParsedCv): string | null {
+  if (cv.sections.summary) {
+    const firstSentence = cv.sections.summary.split(/(?<=[.!?])\s+/)[0]?.trim();
+    if (firstSentence) return truncate(firstSentence, 120);
+  }
+
+  const education = cv.sections.education[0];
+  const topSkills = cv.skills.slice(0, 3);
+
+  if (education && topSkills.length) {
+    return truncate(`${education} — ${topSkills.join(", ")}`, 120);
+  }
+  if (education) return truncate(education, 120);
+  if (topSkills.length) return truncate(`Profil ${topSkills.join(", ")}`, 120);
+
+  return null;
+}
+
+export async function suggestHeadline(cv: ParsedCv): Promise<{ text: string | null; usedAi: boolean }> {
+  if (isAiEnabled()) {
+    try {
+      const text = await suggestHeadlineWithAi(cv);
+      if (text) return { text, usedAi: true };
+    } catch (err) {
+      console.error("Suggestion d'accroche IA impossible, repli sur le mode template:", err);
+    }
+  }
+  return { text: suggestHeadlineWithTemplate(cv), usedAi: false };
+}
+
 export type EmailClassification = "APPLIED" | "INTERVIEW" | "OFFER" | "REJECTED" | null;
 
 const CLASSIFY_SYSTEM_PROMPT = `Tu analyses un email recu dans le cadre d'une recherche d'emploi/alternance,
