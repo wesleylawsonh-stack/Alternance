@@ -189,19 +189,22 @@ ADZUNA_APP_KEY=...
 ```
 
 **La bonne alternance** (API gouvernementale gratuite, specifique
-alternance/apprentissage, usage non commercial uniquement) :
+alternance/apprentissage, agrege France Travail + d'autres diffuseurs,
+usage non commercial uniquement) :
+
+1. Va sur https://api.apprentissage.beta.gouv.fr/fr/explorer/recherche-offre
+2. Clique sur "Obtenir un jeton d'acces" pour recuperer une cle de type
+   **sandbox** (automatique, gratuite). Une cle **production** necessite
+   une demande par email a support_api@apprentissage.beta.gouv.fr.
+3. Renseigne-la dans `.env` :
 
 ```
-LBA_ENABLED=true
+LBA_API_KEY=...
 ```
 
-⚠️ Cette source a ete integree en s'appuyant sur la documentation publique
-disponible (endpoint et parametres non verifiables directement lors de
-l'ecriture de l'adaptateur — voir le commentaire en tete de
-`src/lib/labonnealternance.ts`). Elle peut necessiter un ajustement une
-fois testee en conditions reelles ; en cas d'erreur, le message affiche sur
-la page Offres contient un extrait de la reponse brute de l'API pour
-faciliter le diagnostic.
+Recherche par coordonnees GPS (geocodees a partir de ta premiere
+localisation de criteres) + rayon ; sans localisation definie, l'appel est
+simplement ignore (aucune erreur).
 
 ### 3. Synchronisation Gmail (detection automatique des reponses)
 

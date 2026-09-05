@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(
       {
         error:
-          "Aucune source de recuperation automatique n'est configuree. Ajoute FRANCE_TRAVAIL_CLIENT_ID/SECRET, ADZUNA_APP_ID/KEY et/ou LBA_ENABLED dans .env (voir README), ou ajoute des offres manuellement.",
+          "Aucune source de recuperation automatique n'est configuree. Ajoute FRANCE_TRAVAIL_CLIENT_ID/SECRET, ADZUNA_APP_ID/KEY et/ou LBA_API_KEY dans .env (voir README), ou ajoute des offres manuellement.",
       },
       { status: 400 }
     );

@@ -1,19 +1,13 @@
 // Adaptateur pour l'API "La bonne alternance" (Mission Apprentissage /
-// beta.gouv.fr) : gratuite, reservee a un usage non commercial, specifique
-// aux offres d'alternance/apprentissage, agregeant France Travail et
-// d'autres diffuseurs. Documentation :
-// https://labonnealternance.apprentissage.beta.gouv.fr/espace-developpeurs
+// beta.gouv.fr) : gratuite (usage non commercial), specifique aux offres
+// d'alternance/apprentissage, agregeant France Travail et d'autres
+// diffuseurs. Documentation (schema verifie via le swagger interactif) :
+// https://api.apprentissage.beta.gouv.fr/fr/documentation-technique#tag/Offre-Emploi/operation/jobSearch
 //
-// IMPORTANT : contrairement a franceTravail.ts et adzuna.ts, le detail
-// exact de cette API (endpoint, parametres, forme de la reponse) n'a pas
-// pu etre verifie directement : tous les domaines *.beta.gouv.fr et
-// data.gouv.fr sont inaccessibles depuis l'environnement de developpement
-// utilise pour ecrire cet adaptateur. C'est donc une premiere tentative,
-// desactivee par defaut (LBA_ENABLED), a affiner en conditions reelles a
-// partir des erreurs remontees par extractJobsArray()/pickString() ci-dessous,
-// qui remontent toujours un extrait brut de la reponse en cas de forme
-// inattendue (meme principe que la detection des reponses non-JSON dans
-// franceTravail.ts).
+// Authentification : header "Authorization: Bearer <cle>". Une cle de type
+// "sandbox" s'obtient automatiquement depuis l'espace developpeurs ; une
+// cle "production" necessite une demande par email a
+// support_api@apprentissage.beta.gouv.fr. Voir README pour la procedure.
 
 import type { ExternalOffer } from "./franceTravail";
 import { geocode } from "./geocode";
@@ -24,10 +18,10 @@ export type LbaCriteria = {
   radiusKm: number | null;
 };
 
-const SEARCH_URL = "https://api.apprentissage.beta.gouv.fr/v3/jobs/search";
+const SEARCH_URL = "https://api.apprentissage.beta.gouv.fr/job/v1/search";
 
 export function isLbaConfigured(): boolean {
-  return process.env.LBA_ENABLED === "true";
+  return Boolean(process.env.LBA_API_KEY);
 }
 
 function describeNetworkError(err: unknown): string {
@@ -39,11 +33,11 @@ function describeNetworkError(err: unknown): string {
   return String(err);
 }
 
-async function fetchWithTimeout(url: string, timeoutMs = 10000): Promise<Response> {
+async function fetchWithTimeout(url: string, init: RequestInit, timeoutMs = 10000): Promise<Response> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
   try {
-    return await fetch(url, { signal: controller.signal });
+    return await fetch(url, { ...init, signal: controller.signal });
   } catch (err) {
     throw new Error(`Requete reseau vers La bonne alternance echouee : ${describeNetworkError(err)}`);
   } finally {
@@ -51,63 +45,43 @@ async function fetchWithTimeout(url: string, timeoutMs = 10000): Promise<Respons
   }
 }
 
-type RawJob = Record<string, unknown>;
-
-// Les noms de champs exacts ne sont pas confirmes : on essaie plusieurs
-// chemins plausibles pour chaque information et on ne bloque jamais sur un
-// champ manquant (une offre incomplete vaut mieux qu'une offre perdue).
-function pickString(obj: RawJob, paths: string[][]): string | null {
-  for (const path of paths) {
-    let cur: unknown = obj;
-    for (const key of path) {
-      cur = cur && typeof cur === "object" ? (cur as RawJob)[key] : undefined;
-      if (cur === undefined) break;
-    }
-    if (typeof cur === "string" && cur.trim()) return cur;
-  }
-  return null;
-}
-
-function extractJobsArray(json: unknown): RawJob[] | null {
-  if (Array.isArray(json)) return json as RawJob[];
-  if (json && typeof json === "object") {
-    for (const key of ["jobs", "results", "offres", "data"]) {
-      const val = (json as RawJob)[key];
-      if (Array.isArray(val)) return val as RawJob[];
-    }
-  }
-  return null;
-}
+type JobOfferRead = {
+  identifier?: { id?: string; partner_job_id?: string; partner_label?: string };
+  workplace?: { name?: string; legal_name?: string; location?: { address?: string } };
+  apply?: { url?: string };
+  contract?: { type?: string[] };
+  offer?: { title?: string; description?: string; publication?: { creation?: string } };
+};
 
 export async function fetchLbaOffers(criteria: LbaCriteria, limit = 20): Promise<ExternalOffer[]> {
   if (!isLbaConfigured()) {
-    throw new Error('L\'integration La bonne alternance n\'est pas activee (LBA_ENABLED != "true").');
-  }
-  if (criteria.locations.length === 0) {
-    // Cette API cherche autour d'un point geographique : sans localisation
-    // dans les criteres, on ne peut pas l'interroger utilement (ce n'est
-    // pas une erreur, juste une source qui ne s'applique pas encore).
-    return [];
+    throw new Error("L'integration La bonne alternance n'est pas configuree (LBA_API_KEY manquant).");
   }
 
-  const point = await geocode(criteria.locations[0]);
-  if (!point) return [];
+  const params = new URLSearchParams();
+  if (criteria.locations.length) {
+    const point = await geocode(criteria.locations[0]);
+    if (point) {
+      params.set("longitude", String(point.lon));
+      params.set("latitude", String(point.lat));
+      params.set("radius", String(Math.min(200, Math.max(0, criteria.radiusKm ?? 30))));
+    }
+  }
+  // Pas de filtre "romes" (codes ROME) : on ne dispose pas d'une table de
+  // correspondance intitule de poste -> code ROME. Sans lat/lon la
+  // recherche couvre toute la France ; le matching local (mots-cles,
+  // distance) affine ensuite la pertinence.
 
-  const params = new URLSearchParams({
-    longitude: String(point.lon),
-    latitude: String(point.lat),
-    radius: String(criteria.radiusKm ?? 30),
-    caller: "monalternance-perso",
+  const res = await fetchWithTimeout(`${SEARCH_URL}?${params.toString()}`, {
+    headers: { Authorization: `Bearer ${process.env.LBA_API_KEY}` },
   });
-
-  const res = await fetchWithTimeout(`${SEARCH_URL}?${params.toString()}`);
   const rawText = await res.text();
 
   if (!res.ok) {
     throw new Error(`Recherche d'offres La bonne alternance echouee (${res.status}): ${rawText.slice(0, 300)}`);
   }
 
-  let json: unknown;
+  let json: { jobs?: JobOfferRead[] };
   try {
     json = JSON.parse(rawText);
   } catch {
@@ -116,24 +90,15 @@ export async function fetchLbaOffers(criteria: LbaCriteria, limit = 20): Promise
     );
   }
 
-  const jobs = extractJobsArray(json);
-  if (!jobs) {
-    const keys = json && typeof json === "object" ? Object.keys(json as RawJob).join(", ") : typeof json;
-    throw new Error(`La bonne alternance : forme de reponse inattendue, champs disponibles : ${keys}`);
-  }
-
-  return jobs.slice(0, limit).map((job, i) => {
-    const id = pickString(job, [["id"], ["_id"], ["jobId"]]) ?? `lba-${i}`;
-    return {
-      externalId: `lba:${id}`,
-      title: pickString(job, [["title"], ["intitule"], ["offer", "title"]]) ?? "Offre La bonne alternance",
-      company: pickString(job, [["company", "name"], ["entreprise", "nom"], ["companyName"]]),
-      companyLogoUrl: pickString(job, [["company", "logo"], ["entreprise", "logo"]]),
-      location: pickString(job, [["place", "city"], ["lieu", "libelle"], ["location"]]),
-      url: pickString(job, [["url"], ["applicationUrl"], ["contact", "url"]]),
-      description: pickString(job, [["description"], ["offer", "description"]]) ?? "",
-      contractType: pickString(job, [["contract", "type"], ["typeContrat"], ["contractType"]]),
-      postedAt: pickString(job, [["createdAt"], ["dateCreation"], ["postedAt"]]),
-    };
-  });
+  return (json.jobs ?? []).slice(0, limit).map((job) => ({
+    externalId: `lba:${job.identifier?.id ?? job.identifier?.partner_job_id ?? crypto.randomUUID()}`,
+    title: job.offer?.title ?? "Offre La bonne alternance",
+    company: job.workplace?.name ?? job.workplace?.legal_name ?? null,
+    companyLogoUrl: null,
+    location: job.workplace?.location?.address ?? null,
+    url: job.apply?.url ?? null,
+    description: job.offer?.description ?? "",
+    contractType: job.contract?.type?.length ? job.contract.type.join(", ") : null,
+    postedAt: job.offer?.publication?.creation ?? null,
+  }));
 }
