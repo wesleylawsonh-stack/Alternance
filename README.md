@@ -151,13 +151,20 @@ continu quelque part et qu'une tache planifiee appelle
 `POST /api/gmail/sync`. Plusieurs options :
 
 - **Vercel Cron** : ce depot contient deja un `vercel.json` avec une tache
-  planifiee quotidienne (6h du matin). Le plan gratuit "Hobby" de Vercel
-  limite les cron jobs a une execution par jour maximum ; passe a une
-  frequence plus rapprochee (ex: toutes les heures, `0 * * * *`) uniquement
-  si tu passes au plan Pro. Si tu deploies sur Vercel, definis une variable
-  d'environnement `CRON_SECRET` (n'importe quelle chaine aleatoire) dans les
-  parametres du projet Vercel — Vercel l'enverra automatiquement en
-  en-tete `Authorization: Bearer <CRON_SECRET>` a chaque declenchement.
+  planifiee quotidienne (6h du matin) et `"framework": "nextjs"` (force la
+  detection du framework — sans ca, Vercel peut chercher un dossier
+  `public/` statique et echouer au deploiement avec l'erreur "No Output
+  Directory named public found" au lieu d'utiliser le runtime Next.js). Si
+  cette erreur apparait quand meme, verifie dans les parametres du projet
+  Vercel > "Build and Deployment" que le "Framework Preset" est bien
+  "Next.js" et qu'aucun "Output Directory" personnalise n'est force. Le plan
+  gratuit "Hobby" de Vercel limite par ailleurs les cron jobs a une
+  execution par jour maximum ; passe a une frequence plus rapprochee (ex:
+  toutes les heures, `0 * * * *`) uniquement si tu passes au plan Pro. Si tu
+  deploies sur Vercel, definis une variable d'environnement `CRON_SECRET`
+  (n'importe quelle chaine aleatoire) dans les parametres du projet Vercel —
+  Vercel l'enverra automatiquement en en-tete
+  `Authorization: Bearer <CRON_SECRET>` a chaque declenchement.
   (La base PostgreSQL hebergee, voir "Base de donnees" plus haut, persiste
   normalement entre les redeploiements Vercel.)
 - **Serveur/VPS** : deploie le site (`npm run build && npm start`) et
