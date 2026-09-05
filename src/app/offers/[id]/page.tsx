@@ -3,6 +3,7 @@
 import { useEffect, useState, use } from "react";
 import Link from "next/link";
 import ScoreBadge from "@/components/ScoreBadge";
+import RecommendationBadge from "@/components/RecommendationBadge";
 import StatusSelect from "@/components/StatusSelect";
 
 type Offer = {
@@ -20,6 +21,12 @@ type Offer = {
   requiredSkills: unknown;
   applicationStatus: string;
   comments: string | null;
+  strengths: unknown;
+  weaknesses: unknown;
+  criteriaRespected: unknown;
+  criteriaNotRespected: unknown;
+  mainReason: string | null;
+  recommendation: string | null;
 };
 
 type CvVersionSummary = {
@@ -79,6 +86,10 @@ export default function OfferDetailPage({ params }: { params: Promise<{ id: stri
 
   const matched = Array.isArray(offer.matchedSkills) ? (offer.matchedSkills as string[]) : [];
   const missing = Array.isArray(offer.missingSkills) ? (offer.missingSkills as string[]) : [];
+  const strengths = Array.isArray(offer.strengths) ? (offer.strengths as string[]) : [];
+  const weaknesses = Array.isArray(offer.weaknesses) ? (offer.weaknesses as string[]) : [];
+  const criteriaRespected = Array.isArray(offer.criteriaRespected) ? (offer.criteriaRespected as string[]) : [];
+  const criteriaNotRespected = Array.isArray(offer.criteriaNotRespected) ? (offer.criteriaNotRespected as string[]) : [];
 
   return (
     <div className="space-y-6">
@@ -95,7 +106,10 @@ export default function OfferDetailPage({ params }: { params: Promise<{ id: stri
             </p>
           </div>
           <div className="flex flex-col items-end gap-2">
-            <ScoreBadge score={offer.matchScore} />
+            <div className="flex items-center gap-2">
+              <ScoreBadge score={offer.matchScore} />
+              <RecommendationBadge recommendation={offer.recommendation} />
+            </div>
             <StatusSelect value={offer.applicationStatus} onChange={handleStatusChange} />
           </div>
         </div>
@@ -111,6 +125,57 @@ export default function OfferDetailPage({ params }: { params: Promise<{ id: stri
           </a>
         )}
       </div>
+
+      {(offer.mainReason || strengths.length > 0 || weaknesses.length > 0) && (
+        <div className="card p-6">
+          <h2 className="font-medium text-slate-900 mb-3">Analyse du matching</h2>
+          {offer.mainReason && <p className="text-sm text-slate-700 mb-4">{offer.mainReason}</p>}
+
+          {(criteriaRespected.length > 0 || criteriaNotRespected.length > 0) && (
+            <div className="flex flex-wrap gap-2 mb-4">
+              {criteriaRespected.map((c) => (
+                <span key={c} className="px-2.5 py-1 rounded-full bg-green-50 text-green-800 text-xs font-medium">
+                  ✓ {c}
+                </span>
+              ))}
+              {criteriaNotRespected.map((c) => (
+                <span key={c} className="px-2.5 py-1 rounded-full bg-red-50 text-red-700 text-xs font-medium">
+                  ✕ {c}
+                </span>
+              ))}
+            </div>
+          )}
+
+          <div className="grid sm:grid-cols-2 gap-4">
+            {strengths.length > 0 && (
+              <div>
+                <p className="text-xs font-medium text-slate-500 mb-2">Points forts</p>
+                <ul className="space-y-1">
+                  {strengths.map((s, i) => (
+                    <li key={i} className="text-sm text-slate-600 flex gap-1.5">
+                      <span className="text-green-600">+</span>
+                      {s}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {weaknesses.length > 0 && (
+              <div>
+                <p className="text-xs font-medium text-slate-500 mb-2">Points faibles</p>
+                <ul className="space-y-1">
+                  {weaknesses.map((w, i) => (
+                    <li key={i} className="text-sm text-slate-600 flex gap-1.5">
+                      <span className="text-red-500">−</span>
+                      {w}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       <div className="grid sm:grid-cols-2 gap-4">
         <div className="card p-5">

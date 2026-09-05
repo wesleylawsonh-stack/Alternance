@@ -73,6 +73,12 @@ model Offer {
   matchScore           Float? // 0-100
   matchedSkills        String? // JSON string[]
   missingSkills        String? // JSON string[]
+  strengths            String? // JSON string[] points forts du matching
+  weaknesses           String? // JSON string[] points faibles du matching
+  criteriaRespected    String? // JSON string[] ex: ["Type de contrat", "Localisation"]
+  criteriaNotRespected String? // JSON string[]
+  mainReason           String? // raison principale du score
+  recommendation       String? // POSTULER | CONSIDERER | FAIBLE | IGNORER
   applicationStatus    String    @default("NOT_APPLIED") // NOT_APPLIED | APPLIED | INTERVIEW | OFFER | REJECTED
   comments             String? // notes libres + journal des mises a jour automatiques (Gmail)
   postedAt             DateTime?

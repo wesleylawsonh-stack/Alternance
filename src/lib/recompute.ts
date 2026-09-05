@@ -1,6 +1,8 @@
 import { prisma } from "./db";
-import { computeMatch } from "./matching";
-import { asStringArray, toJsonString } from "./json";
+import { computeWeightedMatch, buildMatchCriteria, matchResultToOfferData } from "./matching";
+import { asStringArray, asObject } from "./json";
+
+const EMPTY_SECTIONS = { summary: null, experiences: [] as string[], education: [] as string[], languages: [] as string[] };
 
 /**
  * Recalcule le score de matching de toutes les offres stockees, a partir du
@@ -16,19 +18,21 @@ export async function recomputeAllOfferScores(): Promise<number> {
 
   const cvSkills = asStringArray(profile?.cvSkills);
   const cvRawText = profile?.cvRawText ?? "";
-  const keywords = asStringArray(criteria?.keywords);
+  const cvEducationText = asObject(profile?.cvSections, EMPTY_SECTIONS).education.join(" ");
+  const matchCriteria = buildMatchCriteria(criteria);
 
   await Promise.all(
-    offers.map((offer) => {
-      const match = computeMatch(cvSkills, offer.description, keywords, cvRawText);
+    offers.map(async (offer) => {
+      const match = await computeWeightedMatch(
+        cvSkills,
+        cvRawText,
+        cvEducationText,
+        { contractType: offer.contractType, location: offer.location, description: offer.description },
+        matchCriteria
+      );
       return prisma.offer.update({
         where: { id: offer.id },
-        data: {
-          requiredSkills: toJsonString(match.requiredSkills),
-          matchedSkills: toJsonString(match.matchedSkills),
-          missingSkills: toJsonString(match.missingSkills),
-          matchScore: match.score,
-        },
+        data: matchResultToOfferData(match),
       });
     })
   );

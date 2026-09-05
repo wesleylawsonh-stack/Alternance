@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { computeMatch } from "@/lib/matching";
-import { asStringArray, toJsonString } from "@/lib/json";
+import { computeWeightedMatch, buildMatchCriteria, matchResultToOfferData } from "@/lib/matching";
+import { asStringArray, asObject } from "@/lib/json";
 import { serializeOffer } from "@/lib/serialize";
+
+const EMPTY_SECTIONS = { summary: null, experiences: [] as string[], education: [] as string[], languages: [] as string[] };
 
 export async function GET() {
   const offers = await prisma.offer.findMany({
@@ -26,23 +28,29 @@ export async function POST(req: NextRequest) {
     prisma.criteria.findUnique({ where: { id: "singleton" } }),
   ]);
 
+  const contractType = typeof body.contractType === "string" ? body.contractType.trim() || null : null;
+  const location = typeof body.location === "string" ? body.location.trim() || null : null;
+
   const cvSkills = asStringArray(profile?.cvSkills);
-  const keywords = asStringArray(criteria?.keywords);
-  const match = computeMatch(cvSkills, description, keywords, profile?.cvRawText ?? "");
+  const cvEducationText = asObject(profile?.cvSections, EMPTY_SECTIONS).education.join(" ");
+  const match = await computeWeightedMatch(
+    cvSkills,
+    profile?.cvRawText ?? "",
+    cvEducationText,
+    { contractType, location, description },
+    buildMatchCriteria(criteria)
+  );
 
   const offer = await prisma.offer.create({
     data: {
       title,
       company: typeof body.company === "string" ? body.company.trim() || null : null,
-      location: typeof body.location === "string" ? body.location.trim() || null : null,
+      location,
       url: typeof body.url === "string" ? body.url.trim() || null : null,
       description,
-      contractType: typeof body.contractType === "string" ? body.contractType.trim() || null : null,
+      contractType,
       source: "manual",
-      requiredSkills: toJsonString(match.requiredSkills),
-      matchedSkills: toJsonString(match.matchedSkills),
-      missingSkills: toJsonString(match.missingSkills),
-      matchScore: match.score,
+      ...matchResultToOfferData(match),
     },
   });
 

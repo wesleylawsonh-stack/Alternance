@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { computeMatch } from "@/lib/matching";
-import { asStringArray, toJsonString } from "@/lib/json";
+import { computeWeightedMatch, buildMatchCriteria, matchResultToOfferData } from "@/lib/matching";
+import { asStringArray, asObject } from "@/lib/json";
 import { fetchFranceTravailOffers, isFranceTravailConfigured } from "@/lib/franceTravail";
+
+const EMPTY_SECTIONS = { summary: null, experiences: [] as string[], education: [] as string[], languages: [] as string[] };
 
 export async function POST() {
   if (!isFranceTravailConfigured()) {
@@ -43,28 +45,29 @@ export async function POST() {
   }
 
   const cvSkills = asStringArray(profile?.cvSkills);
-  const keywords = asStringArray(criteria?.keywords);
-  const excludeKeywords = asStringArray(criteria?.excludeKeywords).map((k) => k.toLowerCase());
+  const cvEducationText = asObject(profile?.cvSections, EMPTY_SECTIONS).education.join(" ");
+  const matchCriteria = buildMatchCriteria(criteria);
 
   let created = 0;
   let skipped = 0;
 
   for (const ext of externalOffers) {
-    if (excludeKeywords.length) {
-      const haystack = `${ext.title} ${ext.description}`.toLowerCase();
-      if (excludeKeywords.some((k) => k && haystack.includes(k))) {
-        skipped++;
-        continue;
-      }
-    }
-
-    const existing = await prisma.offer.findUnique({ where: { externalId: ext.externalId } });
+    // Deduplication par identifiant externe ou URL.
+    const existing = await prisma.offer.findFirst({
+      where: { OR: [{ externalId: ext.externalId }, ...(ext.url ? [{ url: ext.url }] : [])] },
+    });
     if (existing) {
       skipped++;
       continue;
     }
 
-    const match = computeMatch(cvSkills, ext.description, keywords, profile?.cvRawText ?? "");
+    const match = await computeWeightedMatch(
+      cvSkills,
+      profile?.cvRawText ?? "",
+      cvEducationText,
+      { contractType: ext.contractType, location: ext.location, description: ext.description },
+      matchCriteria
+    );
 
     await prisma.offer.create({
       data: {
@@ -77,10 +80,7 @@ export async function POST() {
         source: "france_travail",
         externalId: ext.externalId,
         postedAt: ext.postedAt ? new Date(ext.postedAt) : null,
-        requiredSkills: toJsonString(match.requiredSkills),
-        matchedSkills: toJsonString(match.matchedSkills),
-        missingSkills: toJsonString(match.missingSkills),
-        matchScore: match.score,
+        ...matchResultToOfferData(match),
       },
     });
     created++;

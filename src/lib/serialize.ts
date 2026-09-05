@@ -36,5 +36,9 @@ export function serializeOffer(offer: Offer) {
     requiredSkills: asStringArray(offer.requiredSkills),
     matchedSkills: asStringArray(offer.matchedSkills),
     missingSkills: asStringArray(offer.missingSkills),
+    strengths: asStringArray(offer.strengths),
+    weaknesses: asStringArray(offer.weaknesses),
+    criteriaRespected: asStringArray(offer.criteriaRespected),
+    criteriaNotRespected: asStringArray(offer.criteriaNotRespected),
   };
 }

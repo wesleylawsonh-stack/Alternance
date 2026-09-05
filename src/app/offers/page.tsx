@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import ScoreBadge from "@/components/ScoreBadge";
+import RecommendationBadge from "@/components/RecommendationBadge";
 import StatusSelect, { STATUS_LABELS } from "@/components/StatusSelect";
 
 type Offer = {
@@ -17,6 +18,8 @@ type Offer = {
   missingSkills: unknown;
   applicationStatus: string;
   fetchedAt: string;
+  recommendation: string | null;
+  mainReason: string | null;
 };
 
 export default function OffersPage() {
@@ -124,6 +127,7 @@ export default function OffersPage() {
                   <p className="text-sm text-slate-500 mt-0.5">
                     {[offer.company, offer.location].filter(Boolean).join(" · ") || "—"}
                   </p>
+                  {offer.mainReason && <p className="text-xs text-slate-400 mt-1 truncate">{offer.mainReason}</p>}
                   {missing.length > 0 && (
                     <p className="text-xs text-slate-400 mt-1 truncate">
                       Competences manquantes : {missing.slice(0, 4).join(", ")}
@@ -132,7 +136,10 @@ export default function OffersPage() {
                   )}
                 </div>
                 <div className="flex flex-col items-end gap-2 shrink-0" onClick={(e) => e.preventDefault()}>
-                  <ScoreBadge score={offer.matchScore} />
+                  <div className="flex items-center gap-2">
+                    <ScoreBadge score={offer.matchScore} />
+                    <RecommendationBadge recommendation={offer.recommendation} />
+                  </div>
                   <StatusSelect
                     value={offer.applicationStatus}
                     onChange={(status) => handleStatusChange(offer.id, status)}

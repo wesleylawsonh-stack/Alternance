@@ -12,6 +12,17 @@ d'emploi/alternance :
 - **Offres** : ajout manuel ou récupération automatique (API France
   Travail), avec un **score de compatibilité en %** entre le CV et chaque
   offre, et le détail des **compétences manquantes**.
+- **Matching pondéré multi-critères** : le score combine les compétences du
+  dictionnaire, le chevauchement de vocabulaire CV/offre, et des critères
+  "durs" qui pénalisent fortement le score s'ils ne sont pas respectés :
+  type de contrat, niveau d'expérience demandé (senior/confirmé), niveau de
+  formation requis, localisation (distance réelle via géocodage gratuit,
+  comparée à ton rayon de recherche), et mots-clés exclus (pénalité la plus
+  forte). Chaque offre affiche une **recommandation** (🟢 À postuler / 🔵 À
+  considérer / 🟠 Faible priorité / 🔴 À ignorer), la raison principale, les
+  points forts/faibles et les critères respectés/non respectés. Le
+  géocodage ne bloque jamais le calcul en cas de problème réseau (aucune
+  pénalité appliquée si la distance ne peut pas être déterminée).
 - **Analyse de CV notée** : depuis la page Profil ("Analyser et améliorer
   mon CV"), une note globale sur 100 et des sous-notes (impact, lisibilité,
   adéquation avec tes postes recherchés, compatibilité ATS, compétences,
