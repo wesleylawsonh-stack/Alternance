@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import SearchProfileChat from "@/components/SearchProfileChat";
 import LocationInput from "@/components/LocationInput";
+import LocationMap from "@/components/LocationMap";
 
 type Criteria = {
   jobTitles: string[];
@@ -142,6 +143,14 @@ export default function CriteriaPage() {
             Tape le début d&apos;un nom de ville pour la sélectionner dans la liste, ou une région (ex: &quot;Ile-de-France&quot;) pour
             inclure toutes les offres de cette région.
           </p>
+          {criteria.locations.length > 0 && (
+            <div className="mt-3">
+              <LocationMap locations={criteria.locations} radiusKm={criteria.radiusKm} />
+              <p className="text-xs text-slate-400 mt-1">
+                Régions en surbrillance, villes avec le rayon de recherche défini plus bas (si renseigné).
+              </p>
+            </div>
+          )}
         </div>
 
         <div>

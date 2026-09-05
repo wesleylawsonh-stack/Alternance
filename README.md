@@ -32,12 +32,16 @@ d'emploi/alternance :
   profil (jamais d'écrasement, uniquement des ajouts). Nécessite
   `ANTHROPIC_API_KEY` (pas de repli sans IA pour cette fonctionnalité — un
   faux chatbot sans IA n'aiderait pas).
-- **Localisations avec autocomplétion + régions** : le champ Localisations
-  de la page Critères propose des villes au fur et à mesure de la saisie
-  (API Adresse gouv.fr) ainsi que les régions administratives françaises
-  (ex: "Île-de-France") — sélectionner une région fait correspondre toute
-  offre située dans un département de cette région, indépendamment du rayon
-  de recherche défini pour les villes.
+- **Localisations avec autocomplétion + régions + carte** : le champ
+  Localisations de la page Critères propose des villes au fur et à mesure
+  de la saisie (API Adresse gouv.fr) ainsi que les régions administratives
+  françaises (ex: "Île-de-France") — sélectionner une région fait
+  correspondre toute offre située dans un département de cette région,
+  indépendamment du rayon de recherche défini pour les villes. Une carte
+  (Leaflet + fonds de carte OpenStreetMap, gratuits et sans clé) affiche les
+  villes sélectionnées avec un cercle représentant le rayon de recherche, et
+  le contour des régions sélectionnées (API officielle
+  geo.api.gouv.fr).
 - **Page Offres** : masque par défaut les offres refusées/ignorées (statut
   "Refusé", qu'il vienne du bouton "Ignorer" ou d'un refus détecté via
   Gmail) et celles jugées peu pertinentes (recommandation "Ignorer") —
