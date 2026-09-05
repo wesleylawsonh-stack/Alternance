@@ -18,11 +18,30 @@ model Profile {
   summary    String?
   linkedin   String?
   cvFileName String?
+  cvFileUrl  String? // fichier PDF original tel qu'importe (Vercel Blob), si configure
   cvRawText  String?
   cvSkills   String? // JSON string[]
   cvSections String? // JSON { experiences: [...], education: [...], languages: [...] }
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
+
+  cvVersions CvVersion[]
+}
+
+// Version de CV generee (amelioration generale ou adaptation a une offre
+// precise). Le CV "original" n'a pas d'entree ici : il est represente par
+// Profile.cvFileUrl (fichier importe) / Profile.cvRawText (texte extrait).
+model CvVersion {
+  id           String   @id @default(cuid())
+  profileId    String   @default("singleton")
+  profile      Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  kind         String // IMPROVED | OFFER_ADAPTED
+  label        String // ex: "CV_Loreal_BusinessDeveloper"
+  offerId      String?
+  offerTitle   String? // instantane : reste lisible meme si l'offre est supprimee
+  offerCompany String?
+  content      String // JSON structure (headline, summary, skills[], experiences[], education[], languages[])
+  createdAt    DateTime @default(now())
 }
 
 // Singleton row (id is always "singleton") holding job-search criteria.

@@ -14,7 +14,11 @@ d'emploi/alternance :
   offre, et le détail des **compétences manquantes**.
 - **Adapter mon CV** : génère un nouveau CV orienté pour l'offre choisie
   (réordonnancement des compétences/expériences existantes, jamais
-  d'invention de compétence absente du CV original), téléchargeable en PDF.
+  d'invention de compétence absente du CV original), téléchargeable en PDF
+  avec un template propre et professionnel.
+- **Mes CV** : retrouve le CV original (fichier importé tel quel si Vercel
+  Blob est configuré, sinon reconstruit depuis le texte extrait) ainsi que
+  les futures versions améliorées ou adaptées à des offres précises.
 - **Statut de candidature** (non postulé / postulé / entretien / offre reçue
   / refusé), commentaires libres et lien direct vers l'offre originale.
 - **Export Excel** : télécharge un fichier `.xlsx` (entreprise, poste,
@@ -191,10 +195,30 @@ Sans `CRON_SECRET` defini, l'endpoint `/api/gmail/sync` reste ouvert (pour
 que le bouton manuel fonctionne sans configuration en local) : defini
 toujours `CRON_SECRET` avant de deployer le site publiquement.
 
+### 4. Conservation du fichier CV original (Vercel Blob)
+
+Par defaut, seul le **texte** du CV importe est conserve (extrait a
+l'import). Pour que la page **Mes CV** puisse aussi retelecharger le
+fichier PDF original exactement tel qu'importe (plutot qu'une
+reconstruction a partir du texte) :
+
+1. Dans le projet Vercel, va dans **Storage** > **Create Database** >
+   **Blob**, et cree un store (plan gratuit largement suffisant pour un
+   usage personnel).
+2. La variable `BLOB_READ_WRITE_TOKEN` est ajoutee automatiquement aux
+   variables d'environnement du projet.
+3. En local, copie cette meme valeur dans `.env` si tu veux tester cette
+   fonctionnalite en developpement.
+
+Sans cette configuration, tout continue de fonctionner normalement : le CV
+"original" affiche sur la page Mes CV est simplement reconstruit (mise en
+page propre, meme contenu texte) plutot que d'etre le fichier exact importe.
+
 ## Structure du projet
 
 ```
-prisma/schema.prisma       Modeles Profile / Criteria / Offer / GmailAccount / ProcessedEmail
+prisma/schema.prisma       Modeles Profile / Criteria / Offer / GmailAccount /
+                            ProcessedEmail / CvVersion
 src/lib/
   cvParser.ts               Analyse heuristique du texte du CV
   skills.ts                 Dictionnaire de competences + extraction
@@ -205,11 +229,13 @@ src/lib/
   emailMatcher.ts             Association email <-> offre + classification du statut
   gmailSync.ts                Orchestration de la synchronisation Gmail
   excelExport.ts              Generation du fichier Excel de suivi
-  pdfText.ts / pdfGenerate.ts  Lecture et generation de PDF
+  storage.ts                  Stockage de fichiers (Vercel Blob)
+  pdfText.ts                  Extraction du texte d'un PDF importe
+  cvTemplate.ts                Template PDF (design soigne) pour toutes les versions de CV
 src/app/
-  profile/, criteria/, offers/, integrations/  Pages
+  profile/, criteria/, offers/, cv-history/, integrations/  Pages
   api/                        Routes API (profile, criteria, offers, cv/upload,
-                               offers/export, gmail/...)
+                               cv-versions, offers/export, gmail/...)
 ```
 
 ## Notes

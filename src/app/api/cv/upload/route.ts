@@ -6,6 +6,7 @@ import { recomputeAllOfferScores } from "@/lib/recompute";
 import { toJsonString } from "@/lib/json";
 import { serializeProfile } from "@/lib/serialize";
 import { suggestHeadline } from "@/lib/ai";
+import { uploadFile, deleteFile } from "@/lib/storage";
 
 export async function POST(req: NextRequest) {
   const formData = await req.formData();
@@ -47,22 +48,34 @@ export async function POST(req: NextRequest) {
 
   const parsed = parseCvText(rawText);
 
+  const existingProfile = await prisma.profile.findUnique({ where: { id: "singleton" } });
+  // Stocke le fichier original tel qu'importe (si un stockage Blob est
+  // configure) pour pouvoir le retelecharger a l'identique depuis "Mes CV".
+  // Sans configuration, on se contente du texte deja extrait (cvRawText).
+  const cvFileUrl = await uploadFile(`cv/${Date.now()}-${file.name}`, buffer, "application/pdf");
+
   const profile = await prisma.profile.upsert({
     where: { id: "singleton" },
     create: {
       id: "singleton",
       cvFileName: file.name,
+      cvFileUrl,
       cvRawText: parsed.rawText,
       cvSkills: toJsonString(parsed.skills),
       cvSections: toJsonString(parsed.sections),
     },
     update: {
       cvFileName: file.name,
+      cvFileUrl,
       cvRawText: parsed.rawText,
       cvSkills: toJsonString(parsed.skills),
       cvSections: toJsonString(parsed.sections),
     },
   });
+
+  if (existingProfile?.cvFileUrl && existingProfile.cvFileUrl !== cvFileUrl) {
+    await deleteFile(existingProfile.cvFileUrl);
+  }
 
   const updatedOffers = await recomputeAllOfferScores();
 

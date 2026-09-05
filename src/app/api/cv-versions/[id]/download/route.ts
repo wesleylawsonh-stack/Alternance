@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { parseSectionedCvText, renderCvPdf } from "@/lib/cvTemplate";
+import { asObject } from "@/lib/json";
+import { renderCvPdf, type CvContent } from "@/lib/cvTemplate";
+
+const EMPTY_CONTENT: CvContent = { headline: null, summary: null, skills: [], experiences: [], education: [], languages: [] };
 
 function slugify(text: string): string {
   return text
@@ -15,17 +18,14 @@ function slugify(text: string): string {
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
 
-  const [offer, profile] = await Promise.all([
-    prisma.offer.findUnique({ where: { id } }),
+  const [version, profile] = await Promise.all([
+    prisma.cvVersion.findUnique({ where: { id } }),
     prisma.profile.findUnique({ where: { id: "singleton" } }),
   ]);
 
-  if (!offer) return NextResponse.json({ error: "Offre introuvable." }, { status: 404 });
-  if (!offer.adaptedCvText) {
-    return NextResponse.json({ error: "Aucun CV adapte n'a encore ete genere pour cette offre." }, { status: 400 });
-  }
+  if (!version) return NextResponse.json({ error: "Version de CV introuvable." }, { status: 404 });
 
-  const content = parseSectionedCvText(offer.adaptedCvText);
+  const content = asObject<CvContent>(version.content, EMPTY_CONTENT);
   const pdfBytes = await renderCvPdf(content, {
     fullName: profile?.fullName ?? null,
     email: profile?.email ?? null,
@@ -34,7 +34,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     linkedin: profile?.linkedin ?? null,
   });
 
-  const filename = `cv-${slugify(offer.title)}.pdf`;
+  const filename = `${slugify(version.label) || "cv"}.pdf`;
 
   return new NextResponse(new Uint8Array(pdfBytes), {
     status: 200,
