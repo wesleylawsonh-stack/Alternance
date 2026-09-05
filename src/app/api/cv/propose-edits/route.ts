@@ -38,6 +38,6 @@ export async function POST(req: NextRequest) {
     proposals,
     usedAi,
     cv: { headline: profile.headline, summary: cv.sections.summary, skills: cv.skills, experiences: cv.sections.experiences },
-    offer: offer ? { id: offer.id, title: offer.title, company: offer.company } : null,
+    offer: offer ? { id: offer.id, title: offer.title, company: offer.company, url: offer.url } : null,
   });
 }

@@ -59,6 +59,14 @@ d'emploi/alternance :
   programmatique des compétences proposées, rejet des réponses
   démesurément plus longues que l'original). Génère ensuite une nouvelle
   version de CV en PDF (template propre et professionnel).
+- **✨ Optimiser ma candidature** : depuis une offre, un parcours en un
+  clic qui enchaîne l'analyse de l'offre, l'adaptation du CV (avec la
+  revue avant/après habituelle, rien n'est appliqué sans validation), la
+  génération du PDF, puis la proposition d'un **message de candidature**
+  court basé uniquement sur ton CV et l'offre (même garde-fou
+  anti-invention, éditable avant envoi), et enfin un lien direct pour
+  postuler sur l'offre originale (marque automatiquement le statut
+  "postulé").
 - **Mes CV** : retrouve le CV original (fichier importé tel quel si Vercel
   Blob est configuré, sinon reconstruit depuis le texte extrait) ainsi que
   les versions améliorées ou adaptées à des offres précises (ex:

@@ -140,16 +140,21 @@ export default function OfferDetailPage({ params }: { params: Promise<{ id: stri
           </div>
         </div>
 
-        {offer.url && (
-          <a
-            href={offer.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-block mt-4 text-sm text-brand-600 hover:underline"
-          >
-            Voir l&apos;offre originale ↗
-          </a>
-        )}
+        <div className="flex items-center gap-3 mt-4 flex-wrap">
+          {offer.url && (
+            <a
+              href={offer.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-sm text-brand-600 hover:underline"
+            >
+              Voir l&apos;offre originale ↗
+            </a>
+          )}
+          <Link href={`/cv-editor?offerId=${id}&optimize=1`} className="btn-primary ml-auto">
+            ✨ Optimiser ma candidature
+          </Link>
+        </div>
       </div>
 
       {(offer.mainReason || strengths.length > 0 || weaknesses.length > 0) && (

@@ -44,6 +44,7 @@ export default function CvEditorPage() {
 function CvEditorContent() {
   const searchParams = useSearchParams();
   const offerId = searchParams.get("offerId");
+  const optimize = searchParams.get("optimize") === "1";
 
   const [phase, setPhase] = useState<"score" | "edit">(offerId ? "edit" : "score");
   const [loading, setLoading] = useState(true);
@@ -54,11 +55,18 @@ function CvEditorContent() {
 
   const [proposals, setProposals] = useState<Proposal[]>([]);
   const [usedAi, setUsedAi] = useState(false);
-  const [offerInfo, setOfferInfo] = useState<{ title: string; company: string | null } | null>(null);
+  const [offerInfo, setOfferInfo] = useState<{ id: string; title: string; company: string | null; url: string | null } | null>(
+    null
+  );
   const [decisions, setDecisions] = useState<Record<string, Decision>>({});
   const [editingId, setEditingId] = useState<string | null>(null);
   const [finalizing, setFinalizing] = useState(false);
   const [result, setResult] = useState<{ id: string; label: string } | null>(null);
+
+  const [applicationMessage, setApplicationMessage] = useState<string | null>(null);
+  const [messageLoading, setMessageLoading] = useState(false);
+  const [messageUsedAi, setMessageUsedAi] = useState(false);
+  const [applied, setApplied] = useState(false);
 
   useEffect(() => {
     if (offerId) {
@@ -128,11 +136,42 @@ function CvEditorContent() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Erreur lors de la generation du CV.");
       setResult(data.version);
+
+      if (optimize && offerId) {
+        setMessageLoading(true);
+        try {
+          const msgRes = await fetch("/api/cv/application-message", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ offerId }),
+          });
+          const msgData = await msgRes.json();
+          if (msgRes.ok) {
+            setApplicationMessage(msgData.message);
+            setMessageUsedAi(msgData.usedAi);
+          }
+        } catch {
+          // Le message de candidature est un bonus : une erreur ici ne doit
+          // pas bloquer l'affichage du CV genere avec succes.
+        } finally {
+          setMessageLoading(false);
+        }
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erreur reseau.");
     } finally {
       setFinalizing(false);
     }
+  }
+
+  async function handleApply() {
+    if (!offerId) return;
+    setApplied(true);
+    await fetch(`/api/offers/${offerId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ applicationStatus: "APPLIED" }),
+    });
   }
 
   if (loading) return <p className="text-slate-500">Analyse du CV en cours...</p>;
@@ -151,6 +190,56 @@ function CvEditorContent() {
             </Link>
           </div>
         </div>
+
+        {optimize && offerId && (
+          <div className="card p-6 space-y-4">
+            <div>
+              <h2 className="font-medium text-slate-900">Message de candidature propose</h2>
+              <p className="text-sm text-slate-500 mt-1">
+                Base sur ton CV et cette offre, sans rien inventer. Relis-le et modifie-le avant de l&apos;utiliser.
+              </p>
+            </div>
+
+            {messageLoading ? (
+              <p className="text-sm text-slate-500">Generation du message...</p>
+            ) : applicationMessage !== null ? (
+              <>
+                {!messageUsedAi && (
+                  <p className="text-xs text-amber-800 bg-amber-50 rounded-lg p-2">
+                    Aucune cle IA configuree : message compose a partir d&apos;un modele simple.
+                  </p>
+                )}
+                <textarea
+                  className="input text-sm"
+                  rows={8}
+                  value={applicationMessage}
+                  onChange={(e) => setApplicationMessage(e.target.value)}
+                />
+              </>
+            ) : (
+              <p className="text-sm text-slate-400">Message de candidature indisponible.</p>
+            )}
+
+            <div className="flex items-center gap-3 flex-wrap pt-2 border-t border-slate-100">
+              {offerInfo?.url ? (
+                <a
+                  href={offerInfo.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="btn-primary"
+                  onClick={handleApply}
+                >
+                  Postuler sur l&apos;offre ↗
+                </a>
+              ) : (
+                <button className="btn-primary" onClick={handleApply} disabled={applied}>
+                  Marquer comme postule
+                </button>
+              )}
+              {applied && <span className="text-sm text-green-700">Statut de candidature mis a jour.</span>}
+            </div>
+          </div>
+        )}
       </div>
     );
   }

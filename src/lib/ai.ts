@@ -306,6 +306,106 @@ export async function suggestHeadline(cv: ParsedCv): Promise<{ text: string | nu
   return { text: suggestHeadlineWithTemplate(cv), usedAi: false };
 }
 
+export type ApplicationMessageInput = {
+  cv: ParsedCv;
+  headline: string | null;
+  fullName: string | null;
+  offer: { title: string; company: string | null; description: string };
+  matchedSkills: string[];
+};
+
+const APPLICATION_MESSAGE_SYSTEM_PROMPT = `Tu rediges un court message de candidature (a joindre a un CV, style
+email professionnel) en francais, base UNIQUEMENT sur les informations
+fournies (CV, competences deja detectees, offre).
+REGLE ABSOLUE : n'invente, n'ajoute ni ne suppose aucune information
+(competence, experience, diplome, resultat, motivation specifique) absente
+du CV ou des competences fournies. Tu peux uniquement reformuler et mettre
+en avant ce qui est deja present, en le reliant a l'offre.
+Le message doit : commencer par une formule de politesse, mentionner le
+poste et l'entreprise cibles, mettre en avant 2-3 elements du profil
+(competences/experiences deja detectees) en lien avec l'offre, et se
+terminer par une formule de politesse et une signature avec le prenom/nom
+si fourni. Reste concis (150 mots maximum).
+Reponds UNIQUEMENT avec le texte du message, sans commentaire ni markdown
+autour.`;
+
+export async function generateApplicationMessageWithAi(input: ApplicationMessageInput): Promise<string> {
+  const anthropic = getClient();
+
+  const message = await anthropic.messages.create({
+    model: process.env.ANTHROPIC_MODEL || "claude-sonnet-5",
+    max_tokens: 400,
+    system: APPLICATION_MESSAGE_SYSTEM_PROMPT,
+    messages: [
+      {
+        role: "user",
+        content: `Poste vise : ${input.offer.title}${input.offer.company ? ` chez ${input.offer.company}` : ""}
+Description de l'offre :
+"""
+${input.offer.description}
+"""
+
+CV (texte brut) :
+"""
+${input.cv.rawText}
+"""
+
+Competences deja detectees dans le CV : ${input.cv.skills.join(", ") || "aucune"}
+Competences qui correspondent specifiquement a cette offre : ${input.matchedSkills.join(", ") || "aucune"}
+Accroche actuelle du CV : ${input.headline || "aucune"}
+Nom complet du candidat (pour la signature) : ${input.fullName || "non renseigne"}`,
+      },
+    ],
+  });
+
+  const textBlock = message.content.find((b) => b.type === "text");
+  if (!textBlock || textBlock.type !== "text") {
+    throw new Error("Reponse IA vide");
+  }
+  return textBlock.text.trim();
+}
+
+/**
+ * Message de candidature sans IA : assemble un texte generique a partir
+ * des competences correspondantes deja detectees et de l'accroche du CV.
+ * N'invente rien : ne reference que des elements deja presents dans le CV.
+ */
+export function generateApplicationMessageWithTemplate(input: ApplicationMessageInput): string {
+  const { offer, matchedSkills, headline, fullName } = input;
+  const skillsPart =
+    matchedSkills.length > 0
+      ? `Mon profil comprend notamment : ${matchedSkills.slice(0, 5).join(", ")}.`
+      : "";
+  const headlinePart = headline ? `${headline}.` : "";
+
+  return [
+    "Bonjour,",
+    "",
+    `Je vous adresse ma candidature pour le poste de ${offer.title}${offer.company ? ` au sein de ${offer.company}` : ""}.`,
+    [headlinePart, skillsPart].filter(Boolean).join(" "),
+    "Vous trouverez ci-joint mon CV, adapte pour ce poste. Je serais ravi de vous en dire plus lors d'un entretien.",
+    "",
+    "Cordialement,",
+    fullName || "",
+  ]
+    .filter((line) => line !== "")
+    .join("\n");
+}
+
+export async function generateApplicationMessage(
+  input: ApplicationMessageInput
+): Promise<{ text: string; usedAi: boolean }> {
+  if (isAiEnabled()) {
+    try {
+      const text = await generateApplicationMessageWithAi(input);
+      if (text) return { text, usedAi: true };
+    } catch (err) {
+      console.error("Generation du message de candidature IA impossible, repli sur le mode template:", err);
+    }
+  }
+  return { text: generateApplicationMessageWithTemplate(input), usedAi: false };
+}
+
 export type EmailClassification = "APPLIED" | "INTERVIEW" | "OFFER" | "REJECTED" | null;
 
 const CLASSIFY_SYSTEM_PROMPT = `Tu analyses un email recu dans le cadre d'une recherche d'emploi/alternance,
