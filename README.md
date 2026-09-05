@@ -15,9 +15,19 @@ d'emploi/alternance :
   expériences, formation, langues).
 - **Critères de recherche** : intitulés de poste, localisations, types de
   contrat, mots-clés bonus/exclusion.
-- **Offres** : ajout manuel ou récupération automatique (API France
-  Travail), avec un **score de compatibilité en %** entre le CV et chaque
-  offre, et le détail des **compétences manquantes**. Chaque carte affiche
+- **Offres** : ajout manuel ou récupération automatique depuis plusieurs
+  **sources légales à API officielle** (France Travail, Adzuna — jamais de
+  scraping de LinkedIn/Indeed/Welcome to the Jungle, contraire à leurs
+  conditions d'utilisation), avec un **score de compatibilité en %** entre
+  le CV et chaque offre, et le détail des **compétences manquantes**.
+  Architecture : sources → normalisation → **déduplication** (identifiant
+  externe, URL, empreinte de contenu titre+entreprise+description, et
+  titre+entreprise exact — pour détecter les doublons même entre sources
+  différentes) → matching pondéré avec tes critères → score → classement →
+  affichage. Déclenchement **manuel** (bouton "Récupérer des offres") ou
+  **automatique quotidien** (tâche planifiée Vercel, activable/désactivable
+  dans la page Critères — la fréquence est limitée au quotidien par le plan
+  Vercel Hobby). Chaque carte affiche
   le logo de l'entreprise (si fourni par la source), la date de publication
   et la source, avec des actions rapides (Voir l'offre, Voir le matching,
   Adapter mon CV, Postuler, Ignorer). **Filtres** disponibles : score

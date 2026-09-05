@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { computeWeightedMatch, buildMatchCriteria, matchResultToOfferData } from "@/lib/matching";
 import { asStringArray, asObject } from "@/lib/json";
 import { serializeOffer } from "@/lib/serialize";
+import { computeOfferContentHash } from "@/lib/contentHash";
 
 const EMPTY_SECTIONS = { summary: null, experiences: [] as string[], education: [] as string[], languages: [] as string[] };
 
@@ -66,15 +67,18 @@ export async function POST(req: NextRequest) {
     buildMatchCriteria(criteria)
   );
 
+  const company = typeof body.company === "string" ? body.company.trim() || null : null;
+
   const offer = await prisma.offer.create({
     data: {
       title,
-      company: typeof body.company === "string" ? body.company.trim() || null : null,
+      company,
       location,
       url: typeof body.url === "string" ? body.url.trim() || null : null,
       description,
       contractType,
       source: "manual",
+      contentHash: computeOfferContentHash(title, company, description),
       ...matchResultToOfferData(match),
     },
   });

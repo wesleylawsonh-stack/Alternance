@@ -9,6 +9,7 @@ import StatusSelect from "@/components/StatusSelect";
 const SOURCE_LABELS: Record<string, string> = {
   manual: "Ajout manuel",
   france_travail: "France Travail",
+  adzuna: "Adzuna",
 };
 
 type Offer = {

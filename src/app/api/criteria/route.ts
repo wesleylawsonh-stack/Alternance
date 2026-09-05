@@ -32,6 +32,7 @@ export async function PUT(req: NextRequest) {
     excludeKeywords: toJsonString(toStringArray(body.excludeKeywords)),
     minSalary: body.minSalary ? Number(body.minSalary) : null,
     radiusKm: body.radiusKm ? Number(body.radiusKm) : null,
+    autoFetchEnabled: body.autoFetchEnabled === undefined ? true : Boolean(body.autoFetchEnabled),
   };
 
   const criteria = await prisma.criteria.upsert({

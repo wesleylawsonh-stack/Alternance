@@ -27,6 +27,7 @@ type Offer = {
 const SOURCE_LABELS: Record<string, string> = {
   manual: "Ajout manuel",
   france_travail: "France Travail",
+  adzuna: "Adzuna",
 };
 
 const DATE_OPTIONS = [
@@ -90,8 +91,13 @@ export default function OffersPage() {
       const data = await res.json();
       if (!res.ok) {
         setFetchMsg(data.error || "Erreur lors de la recuperation des offres.");
+      } else if (data.skipped !== undefined && data.created === undefined) {
+        setFetchMsg("Recuperation automatique ignoree (desactivee dans les criteres).");
       } else {
-        setFetchMsg(`${data.created} nouvelle(s) offre(s) ajoutee(s) (${data.skipped} deja connue(s) ou filtree(s)).`);
+        const errorNote = data.sourceErrors?.length ? ` Attention : ${data.sourceErrors.join(" | ")}` : "";
+        setFetchMsg(
+          `${data.created} nouvelle(s) offre(s) ajoutee(s) (${data.skipped} deja connue(s) ou filtree(s)).${errorNote}`
+        );
         loadOffers();
       }
     } catch {

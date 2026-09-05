@@ -11,6 +11,7 @@ type Criteria = {
   excludeKeywords: string[];
   minSalary: number | null;
   radiusKm: number | null;
+  autoFetchEnabled: boolean;
 };
 
 const EMPTY: Criteria = {
@@ -22,6 +23,7 @@ const EMPTY: Criteria = {
   excludeKeywords: [],
   minSalary: null,
   radiusKm: null,
+  autoFetchEnabled: true,
 };
 
 const CONTRACT_OPTIONS = ["Alternance", "Stage", "CDI", "CDD", "Interim"];
@@ -56,6 +58,7 @@ export default function CriteriaPage() {
             excludeKeywords: data.criteria.excludeKeywords ?? [],
             minSalary: data.criteria.minSalary,
             radiusKm: data.criteria.radiusKm,
+            autoFetchEnabled: data.criteria.autoFetchEnabled ?? true,
           });
         }
         setLoading(false);
@@ -190,6 +193,25 @@ export default function CriteriaPage() {
             value={arrToText(criteria.excludeKeywords)}
             onChange={(e) => setCriteria({ ...criteria, excludeKeywords: textToArr(e.target.value) })}
           />
+        </div>
+
+        <div className="pt-2 border-t border-slate-100">
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              id="autoFetch"
+              checked={criteria.autoFetchEnabled}
+              onChange={(e) => setCriteria({ ...criteria, autoFetchEnabled: e.target.checked })}
+              className="h-4 w-4"
+            />
+            <label htmlFor="autoFetch" className="text-sm text-slate-700">
+              Recuperation automatique quotidienne des offres
+            </label>
+          </div>
+          <p className="text-xs text-slate-400 mt-1">
+            Frequence : quotidienne (limite du plan Vercel Hobby). Tu peux toujours declencher une
+            recuperation manuelle a tout moment depuis la page Offres, meme si cette option est desactivee.
+          </p>
         </div>
 
         <div className="flex items-center gap-3">
