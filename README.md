@@ -50,11 +50,22 @@ Dans les deux cas, renseigne l'URL de connexion dans `.env` :
 DATABASE_URL="postgresql://user:password@host:5432/dbname"
 ```
 
+**Sur Vercel**, le script `build` (`prisma generate && prisma migrate deploy
+&& next build`) applique automatiquement les migrations en attente a chaque
+deploiement, en utilisant la variable `DATABASE_URL` deja configuree dans
+les parametres du projet — aucune commande manuelle a lancer apres le
+premier deploiement. Ca implique que `DATABASE_URL` doit etre disponible au
+moment du **build**, pas seulement a l'execution : dans les parametres
+Vercel du projet, verifie que la variable est bien activee pour tous les
+environnements ou tu deploies (Production, et Preview si tu deploies des
+branches/PR comme celle-ci — sans quoi le build d'une preview echouera
+faute de base de donnees accessible).
+
 ## Démarrage local
 
 ```bash
 npm install
-npx prisma migrate deploy   # cree les tables dans la base PostgreSQL
+npx prisma migrate deploy   # cree les tables dans la base PostgreSQL (deja inclus dans `npm run build`)
 npm run dev
 ```
 
