@@ -12,9 +12,14 @@ d'emploi/alternance :
 - **Offres** : ajout manuel ou récupération automatique (API France
   Travail), avec un **score de compatibilité en %** entre le CV et chaque
   offre, et le détail des **compétences manquantes**.
+- **Analyse de CV notée** : depuis la page Profil ("Analyser et améliorer
+  mon CV"), une note globale sur 100 et des sous-notes (impact, lisibilité,
+  adéquation avec tes postes recherchés, compatibilité ATS, compétences,
+  expériences) avec des observations concrètes, avant de passer à
+  l'éditeur.
 - **Éditeur de CV assisté par IA** : depuis une offre ("Adapter mon CV à
-  cette offre") ou depuis la page Profil ("Analyser et améliorer mon CV"),
-  propose des améliorations de formulation (accroche, résumé, expériences)
+  cette offre") ou après l'analyse ci-dessus ("Créer une version
+  améliorée"), propose des améliorations de formulation (accroche, résumé, expériences)
   et un réordonnancement des compétences pertinentes. Chaque proposition
   s'affiche en comparatif version actuelle / proposition IA, avec
   Accepter / Modifier / Refuser — rien n'est appliqué sans validation.

@@ -18,6 +18,21 @@ type Decision = {
   editedText?: string;
 };
 
+type CvScore = {
+  overall: number;
+  categories: Record<"impact" | "lisibilite" | "adequation" | "ats" | "competences" | "experiences", number>;
+  findings: string[];
+};
+
+const CATEGORY_LABELS: Record<string, string> = {
+  impact: "Impact",
+  lisibilite: "Lisibilite",
+  adequation: "Adequation avec tes postes recherches",
+  ats: "Compatibilite ATS",
+  competences: "Competences",
+  experiences: "Experiences",
+};
+
 export default function CvEditorPage() {
   return (
     <Suspense fallback={<p className="text-slate-500">Chargement...</p>}>
@@ -30,8 +45,13 @@ function CvEditorContent() {
   const searchParams = useSearchParams();
   const offerId = searchParams.get("offerId");
 
+  const [phase, setPhase] = useState<"score" | "edit">(offerId ? "edit" : "score");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const [score, setScore] = useState<CvScore | null>(null);
+  const [scoreUsedAi, setScoreUsedAi] = useState(false);
+
   const [proposals, setProposals] = useState<Proposal[]>([]);
   const [usedAi, setUsedAi] = useState(false);
   const [offerInfo, setOfferInfo] = useState<{ title: string; company: string | null } | null>(null);
@@ -41,6 +61,31 @@ function CvEditorContent() {
   const [result, setResult] = useState<{ id: string; label: string } | null>(null);
 
   useEffect(() => {
+    if (offerId) {
+      loadProposals();
+    } else {
+      loadScore();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [offerId]);
+
+  function loadScore() {
+    setLoading(true);
+    setError(null);
+    fetch("/api/cv/score", { method: "POST" })
+      .then(async (r) => {
+        const data = await r.json();
+        if (!r.ok) throw new Error(data.error || "Erreur lors de l'analyse du CV.");
+        setScore(data.score);
+        setScoreUsedAi(data.usedAi);
+      })
+      .catch((err) => setError(err.message))
+      .finally(() => setLoading(false));
+  }
+
+  function loadProposals() {
+    setLoading(true);
+    setError(null);
     fetch("/api/cv/propose-edits", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -57,10 +102,11 @@ function CvEditorContent() {
           initialDecisions[p.id] = { action: "accept" };
         }
         setDecisions(initialDecisions);
+        setPhase("edit");
       })
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
-  }, [offerId]);
+  }
 
   function setDecision(id: string, decision: Decision) {
     setDecisions((prev) => ({ ...prev, [id]: decision }));
@@ -105,6 +151,67 @@ function CvEditorContent() {
             </Link>
           </div>
         </div>
+      </div>
+    );
+  }
+
+  if (phase === "score" && score) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-semibold text-slate-900">Analyse de ton CV</h1>
+          <p className="text-slate-500 mt-1">Evaluation de la redaction de ton CV (pas de ta valeur en tant que candidat).</p>
+        </div>
+
+        {error && <p className="card p-4 text-sm text-red-600">{error}</p>}
+
+        {!scoreUsedAi && (
+          <p className="card p-4 text-sm text-amber-800 bg-amber-50">
+            Aucune cle IA configuree (ANTHROPIC_API_KEY) : l&apos;analyse ci-dessous est basee sur des criteres
+            objectifs simples (verbes d&apos;action, chiffres, sections presentes...). Connecte une cle IA pour une
+            analyse plus fine.
+          </p>
+        )}
+
+        <div className="card p-6 text-center">
+          <p className="text-5xl font-bold text-brand-700">{score.overall}</p>
+          <p className="text-slate-500 mt-1">/ 100</p>
+        </div>
+
+        <div className="grid sm:grid-cols-2 gap-4">
+          {Object.entries(score.categories).map(([key, value]) => (
+            <div key={key} className="card p-4">
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-sm font-medium text-slate-700">{CATEGORY_LABELS[key] ?? key}</span>
+                <span className="text-sm font-semibold text-slate-900">{value}</span>
+              </div>
+              <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                <div
+                  className={`h-full rounded-full ${value >= 70 ? "bg-green-500" : value >= 40 ? "bg-amber-500" : "bg-red-500"}`}
+                  style={{ width: `${value}%` }}
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {score.findings.length > 0 && (
+          <div className="card p-6">
+            <h2 className="font-medium text-slate-900 mb-3">Observations</h2>
+            <ul className="space-y-2">
+              {score.findings.map((f, i) => (
+                <li key={i} className="text-sm text-slate-600 flex gap-2">
+                  <span className="text-brand-600">•</span>
+                  {f}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        <button className="btn-primary" onClick={loadProposals}>
+          Creer une version amelioree
+        </button>
       </div>
     );
   }

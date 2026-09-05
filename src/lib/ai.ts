@@ -1,5 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
 import type { ParsedCv } from "./cvParser";
+import { computeContentOverlap } from "./matching";
 
 export function isAiEnabled(): boolean {
   return Boolean(process.env.ANTHROPIC_API_KEY);
@@ -362,4 +363,207 @@ ${params.bodyExcerpt}
     console.error("Classification IA de l'email impossible:", err);
     return null;
   }
+}
+
+export type CvScoreCategory = "impact" | "lisibilite" | "adequation" | "ats" | "competences" | "experiences";
+
+export type CvScore = {
+  overall: number; // 0-100
+  categories: Record<CvScoreCategory, number>; // 0-100 chacune
+  findings: string[]; // observations concretes, une par ligne
+};
+
+export type ScoreCvInput = {
+  cv: ParsedCv;
+  currentHeadline: string | null;
+  targetJobTitles: string[]; // criteres.jobTitles, pour l'adequation
+};
+
+const ACTION_VERBS_FR = [
+  "gere", "gerer", "developpe", "developper", "pilote", "piloter", "anime", "animer",
+  "coordonne", "coordonner", "cree", "creer", "concois", "concevoir", "optimise", "optimiser",
+  "negocie", "negocier", "dirige", "diriger", "supervise", "superviser", "organise", "organiser",
+  "analyse", "analyser", "implemente", "implementer", "ameliore", "ameliorer", "lance", "lancer",
+  "conduis", "conduit", "conduire", "realise", "realiser", "encadre", "encadrer", "forme", "former",
+  "prospecte", "prospecter", "vends", "vendre", "augmente", "augmenter", "reduis", "reduire",
+];
+
+/**
+ * Analyse heuristique (sans IA) du CV : verifie des signaux objectifs et
+ * observables dans le texte (verbes d'action, chiffres, longueur des
+ * sections, sections manquantes, repetitions) plutot que de juger la
+ * qualite du contenu lui-meme.
+ */
+export function scoreCvWithHeuristics(input: ScoreCvInput): CvScore {
+  const { cv, currentHeadline, targetJobTitles } = input;
+  const findings: string[] = [];
+
+  // --- Impact : verbes d'action + resultats chiffres ---
+  const experiences = cv.sections.experiences;
+  const withNumber = experiences.filter((e) => /\d/.test(e)).length;
+  const withActionVerb = experiences.filter((e) => {
+    const normalized = e
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[̀-ͯ]/g, "");
+    return ACTION_VERBS_FR.some((v) => normalized.includes(v));
+  }).length;
+  let impact = 40;
+  if (experiences.length > 0) {
+    impact = Math.round(((withNumber + withActionVerb) / (experiences.length * 2)) * 100);
+  }
+  if (withNumber === 0 && experiences.length > 0) {
+    findings.push("Aucun resultat chiffre detecte dans les experiences (ex: pourcentages, montants, quantites).");
+  }
+  if (withActionVerb < experiences.length && experiences.length > 0) {
+    findings.push("Certaines experiences ne commencent pas par un verbe d'action fort.");
+  }
+
+  // --- Lisibilite : longueur des sections, repetitions ---
+  const tooLong = experiences.filter((e) => e.length > 280).length;
+  const words = experiences.flatMap((e) => e.toLowerCase().split(/\s+/).filter((w) => w.length > 5));
+  const wordCounts = new Map<string, number>();
+  for (const w of words) wordCounts.set(w, (wordCounts.get(w) ?? 0) + 1);
+  const repeatedWords = [...wordCounts.entries()].filter(([, count]) => count >= 3);
+  let lisibilite = 90;
+  if (tooLong > 0) {
+    lisibilite -= tooLong * 15;
+    findings.push(`${tooLong} experience(s) tres longue(s) (plus de 280 caracteres) : envisage de raccourcir.`);
+  }
+  if (repeatedWords.length > 0) {
+    lisibilite -= 10;
+    findings.push(`Mots repetes plusieurs fois dans les experiences : ${repeatedWords.map(([w]) => w).slice(0, 3).join(", ")}.`);
+  }
+  lisibilite = Math.max(0, Math.min(100, lisibilite));
+
+  // --- Adequation avec les postes recherches ---
+  let adequation = 50;
+  if (targetJobTitles.length > 0) {
+    adequation = computeContentOverlap(cv.rawText, targetJobTitles.join(" "));
+  } else {
+    findings.push("Aucun intitule de poste enregistre dans tes criteres : impossible d'evaluer l'adequation avec ta recherche.");
+  }
+
+  // --- ATS : sections standards presentes ---
+  const missingSections: string[] = [];
+  if (!currentHeadline) missingSections.push("accroche");
+  if (!cv.sections.summary) missingSections.push("resume/profil");
+  if (cv.sections.experiences.length === 0) missingSections.push("experiences");
+  if (cv.sections.education.length === 0) missingSections.push("formation");
+  if (cv.skills.length === 0) missingSections.push("competences");
+  if (cv.sections.languages.length === 0) missingSections.push("langues");
+  const ats = Math.round(((6 - missingSections.length) / 6) * 100);
+  if (missingSections.length > 0) {
+    findings.push(`Section(s) manquante(s) ou non detectee(s) : ${missingSections.join(", ")}.`);
+  }
+
+  // --- Competences ---
+  const competences = Math.min(100, cv.skills.length * 12);
+  if (cv.skills.length < 4) {
+    findings.push("Peu de competences detectees : verifie qu'elles sont bien listees clairement dans le CV.");
+  }
+
+  // --- Experiences ---
+  let experiencesScore = Math.min(100, experiences.length * 30);
+  if (experiences.length === 0) {
+    findings.push("Aucune experience detectee dans le CV.");
+    experiencesScore = 0;
+  }
+
+  const categories: Record<CvScoreCategory, number> = {
+    impact: clamp(impact),
+    lisibilite: clamp(lisibilite),
+    adequation: clamp(adequation),
+    ats: clamp(ats),
+    competences: clamp(competences),
+    experiences: clamp(experiencesScore),
+  };
+
+  const overall = Math.round(
+    (categories.impact + categories.lisibilite + categories.adequation + categories.ats + categories.competences + categories.experiences) / 6
+  );
+
+  return { overall, categories, findings };
+}
+
+function clamp(n: number): number {
+  return Math.max(0, Math.min(100, Math.round(n)));
+}
+
+const SCORE_SYSTEM_PROMPT = `Tu es un expert en recrutement qui evalue la QUALITE DE REDACTION d'un CV
+(pas la valeur du candidat). Tu juges uniquement ce qui est ecrit : clarte,
+impact des formulations, presence de verbes d'action et de resultats
+chiffres deja mentionnes, lisibilite, compatibilite ATS (sections
+standards presentes, pas de formulation ambigue), pertinence des
+competences listees par rapport aux postes recherches, et qualite de la
+presentation des experiences.
+IMPORTANT : ne juge jamais le contenu factuel (tu ne sais pas si le
+candidat est un bon professionnel), seulement sa presentation ecrite. Ne
+suppose ni n'invente aucune information absente du texte fourni.
+
+Reponds UNIQUEMENT avec un objet JSON de la forme :
+{"categories": {"impact": 0-100, "lisibilite": 0-100, "adequation": 0-100, "ats": 0-100, "competences": 0-100, "experiences": 0-100}, "findings": ["observation courte 1", "observation courte 2", ...]}
+5 a 8 "findings" maximum, chacune une phrase courte et actionnable (ex:
+"Ajoute un verbe d'action en debut de la 2e experience", "La liste de
+competences pourrait inclure des outils plus specifiques"). Pas de texte
+hors du JSON.`;
+
+export async function scoreCvWithAi(input: ScoreCvInput): Promise<CvScore> {
+  const anthropic = getClient();
+  const { cv, currentHeadline, targetJobTitles } = input;
+
+  const userPrompt = `CV :
+Accroche : ${currentHeadline ?? "(absente)"}
+Resume/profil : ${cv.sections.summary ?? "(absent)"}
+Competences listees : ${cv.skills.join(", ") || "(aucune)"}
+Experiences :
+${cv.sections.experiences.map((e, i) => `${i + 1}. ${e}`).join("\n") || "(aucune)"}
+Formation :
+${cv.sections.education.join("\n") || "(aucune)"}
+Langues : ${cv.sections.languages.join(", ") || "(aucune)"}
+
+Postes recherches par le candidat : ${targetJobTitles.join(", ") || "(non precise)"}
+
+Texte brut complet (contexte) :
+"""
+${cv.rawText}
+"""`;
+
+  const message = await anthropic.messages.create({
+    model: process.env.ANTHROPIC_MODEL || "claude-sonnet-5",
+    max_tokens: 1200,
+    system: SCORE_SYSTEM_PROMPT,
+    messages: [{ role: "user", content: userPrompt }],
+  });
+
+  const textBlock = message.content.find((b) => b.type === "text");
+  if (!textBlock || textBlock.type !== "text") throw new Error("Reponse IA vide");
+
+  const jsonMatch = textBlock.text.match(/\{[\s\S]*\}/);
+  if (!jsonMatch) throw new Error("Reponse IA non structuree (JSON attendu)");
+  const parsed = JSON.parse(jsonMatch[0]) as { categories?: Partial<Record<CvScoreCategory, number>>; findings?: string[] };
+
+  const categoryKeys: CvScoreCategory[] = ["impact", "lisibilite", "adequation", "ats", "competences", "experiences"];
+  const categories = {} as Record<CvScoreCategory, number>;
+  for (const key of categoryKeys) {
+    const value = parsed.categories?.[key];
+    categories[key] = typeof value === "number" ? clamp(value) : 50;
+  }
+
+  const overall = Math.round(categoryKeys.reduce((sum, key) => sum + categories[key], 0) / categoryKeys.length);
+  const findings = Array.isArray(parsed.findings) ? parsed.findings.filter((f) => typeof f === "string").slice(0, 8) : [];
+
+  return { overall, categories, findings };
+}
+
+export async function scoreCv(input: ScoreCvInput): Promise<{ score: CvScore; usedAi: boolean }> {
+  if (isAiEnabled()) {
+    try {
+      const score = await scoreCvWithAi(input);
+      return { score, usedAi: true };
+    } catch (err) {
+      console.error("Notation IA du CV impossible, repli sur le mode heuristique:", err);
+    }
+  }
+  return { score: scoreCvWithHeuristics(input), usedAi: false };
 }
