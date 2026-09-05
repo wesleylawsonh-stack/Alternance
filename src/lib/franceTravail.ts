@@ -28,15 +28,6 @@ export type ExternalOffer = {
 const TOKEN_URL = "https://entreprise.francetravail.fr/connexion/oauth2/access_token?realm=%2Fpartenaire";
 const SEARCH_URL = "https://api.francetravail.io/partenaire/offresdemploi/v2/offres/search";
 
-const CONTRACT_TYPE_MAP: Record<string, string> = {
-  alternance: "E2", // Contrat d'apprentissage / de professionnalisation (regroupes cote UI)
-  apprentissage: "E2",
-  stage: "FS",
-  cdi: "CDI",
-  cdd: "CDD",
-  interim: "MIS",
-};
-
 export function isFranceTravailConfigured(): boolean {
   return Boolean(process.env.FRANCE_TRAVAIL_CLIENT_ID && process.env.FRANCE_TRAVAIL_CLIENT_SECRET);
 }
@@ -124,10 +115,11 @@ export async function fetchFranceTravailOffers(
   if (criteria.jobTitles.length) params.set("motsCles", criteria.jobTitles.join(" "));
   if (criteria.locations.length) params.set("commune", criteria.locations[0]);
 
-  const contractCodes = criteria.contractTypes
-    .map((c) => CONTRACT_TYPE_MAP[c.toLowerCase().trim()])
-    .filter(Boolean);
-  if (contractCodes.length) params.set("typeContrat", contractCodes.join(","));
+  // Pas de filtre typeContrat cote API : les codes exacts attendus par
+  // France Travail sont incertains (un mauvais code fait echouer TOUTE la
+  // requete avec un 400). Le matching local (computeWeightedMatch) penalise
+  // deja fortement un type de contrat incompatible, donc filtrer ici
+  // n'apporterait qu'un risque de casse pour un gain marginal.
 
   params.set("range", `0-${Math.max(0, limit - 1)}`);
   params.set("sort", "1"); // tri par date de creation decroissante
