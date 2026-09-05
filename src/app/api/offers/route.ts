@@ -16,21 +16,42 @@ export async function GET(req: NextRequest) {
   const status = params.get("status");
   const source = params.get("source");
   const postedAfter = params.get("postedAfter");
+  const hideLowMatch = params.get("hideLowMatch") === "true";
 
-  const where: Record<string, unknown> = {};
-  if (minScore) where.matchScore = { gte: Number(minScore) };
-  if (company) where.company = { contains: company, mode: "insensitive" };
-  if (location) where.location = { contains: location, mode: "insensitive" };
-  if (status && status !== "ALL") where.applicationStatus = status;
-  if (source && source !== "ALL") where.source = source;
+  // Chaque filtre "OR" (date, recommandation) est pousse comme sa propre
+  // entree d'un tableau AND plutot que d'ecrire directement where.OR, pour
+  // pouvoir combiner plusieurs filtres a base de OR sans qu'ils s'ecrasent.
+  const and: Record<string, unknown>[] = [];
+
+  if (minScore) and.push({ matchScore: { gte: Number(minScore) } });
+  if (company) and.push({ company: { contains: company, mode: "insensitive" } });
+  if (location) and.push({ location: { contains: location, mode: "insensitive" } });
+  if (source && source !== "ALL") and.push({ source });
+
+  // "ACTIVE" (valeur par defaut cote UI) masque les offres refusees/ignorees
+  // (le bouton "Ignorer" et un refus detecte via Gmail utilisent tous deux
+  // le statut REJECTED) sans imposer un statut precis comme le ferait un
+  // filtre exact.
+  if (status === "ACTIVE") and.push({ applicationStatus: { not: "REJECTED" } });
+  else if (status && status !== "ALL") and.push({ applicationStatus: status });
+
   if (postedAfter) {
     const date = new Date(postedAfter);
     if (!isNaN(date.getTime())) {
       // Filtre sur la date de publication quand elle est connue, sinon sur
       // la date de recuperation (offres ajoutees manuellement sans date).
-      where.OR = [{ postedAt: { gte: date } }, { AND: [{ postedAt: null }, { fetchedAt: { gte: date } }] }];
+      and.push({ OR: [{ postedAt: { gte: date } }, { AND: [{ postedAt: null }, { fetchedAt: { gte: date } }] }] });
     }
   }
+
+  if (hideLowMatch) {
+    // "not: IGNORER" exclurait aussi les offres sans recommandation encore
+    // calculee (NULL) a cause de la logique ternaire SQL : on les garde
+    // explicitement visibles plutot que de les masquer par erreur.
+    and.push({ OR: [{ recommendation: { not: "IGNORER" } }, { recommendation: null }] });
+  }
+
+  const where = and.length > 0 ? { AND: and } : {};
 
   const offers = await prisma.offer.findMany({
     where,

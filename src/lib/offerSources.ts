@@ -17,6 +17,14 @@ export type OfferSourceCriteria = {
   radiusKm: number | null;
 };
 
+// Nombre de resultats demandes par source a chaque recuperation. Plus haut
+// que les valeurs par defaut de chaque adaptateur (20) pour proposer plus
+// d'offres au candidat. France Travail accepte jusqu'a 150 resultats par
+// appel (parametre range) ; Adzuna plafonne results_per_page a 50.
+const FRANCE_TRAVAIL_LIMIT = 100;
+const ADZUNA_LIMIT = 50;
+const LBA_LIMIT = 50;
+
 export function isAnySourceConfigured(): boolean {
   return isFranceTravailConfigured() || isAdzunaConfigured() || isLbaConfigured();
 }
@@ -43,7 +51,7 @@ export async function fetchAllExternalOffers(
 
   if (isFranceTravailConfigured()) {
     tasks.push(
-      fetchFranceTravailOffers(criteria)
+      fetchFranceTravailOffers(criteria, FRANCE_TRAVAIL_LIMIT)
         .then((offers) => offers.map((o) => ({ ...o, source: "france_travail" })))
         .catch((err) => {
           console.error("Erreur source France Travail:", err);
@@ -55,7 +63,7 @@ export async function fetchAllExternalOffers(
 
   if (isAdzunaConfigured()) {
     tasks.push(
-      fetchAdzunaOffers(criteria)
+      fetchAdzunaOffers(criteria, ADZUNA_LIMIT)
         .then((offers) => offers.map((o) => ({ ...o, source: "adzuna" })))
         .catch((err) => {
           console.error("Erreur source Adzuna:", err);
@@ -67,7 +75,7 @@ export async function fetchAllExternalOffers(
 
   if (isLbaConfigured()) {
     tasks.push(
-      fetchLbaOffers(criteria)
+      fetchLbaOffers(criteria, LBA_LIMIT)
         .then((offers) => offers.map((o) => ({ ...o, source: "lba" })))
         .catch((err) => {
           console.error("Erreur source La bonne alternance:", err);

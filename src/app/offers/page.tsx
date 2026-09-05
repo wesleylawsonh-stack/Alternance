@@ -45,9 +45,27 @@ type Filters = {
   status: string;
   source: string;
   days: string;
+  hideLowMatch: boolean;
 };
 
-const EMPTY_FILTERS: Filters = { minScore: "", company: "", location: "", status: "ALL", source: "ALL", days: "" };
+// Par defaut, masque les offres refusees/ignorees ("status: ACTIVE") et
+// celles trop peu pertinentes ("hideLowMatch") pour ne pas polluer la liste
+// avec des offres deja traitees ou hors criteres.
+const DEFAULT_FILTERS: Filters = {
+  minScore: "",
+  company: "",
+  location: "",
+  status: "ACTIVE",
+  source: "ALL",
+  days: "",
+  hideLowMatch: true,
+};
+
+const STATUS_FILTER_OPTIONS: Array<{ value: string; label: string }> = [
+  { value: "ACTIVE", label: "Statuts actifs (masque refusees/ignorees)" },
+  { value: "ALL", label: "Tous statuts" },
+  ...Object.entries(STATUS_LABELS).map(([value, label]) => ({ value, label })),
+];
 
 export default function OffersPage() {
   const [offers, setOffers] = useState<Offer[]>([]);
@@ -55,7 +73,7 @@ export default function OffersPage() {
   const [fetching, setFetching] = useState(false);
   const [fetchMsg, setFetchMsg] = useState<string | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
-  const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS);
+  const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS);
 
   const queryString = useMemo(() => {
     const params = new URLSearchParams();
@@ -64,6 +82,7 @@ export default function OffersPage() {
     if (filters.location) params.set("location", filters.location);
     if (filters.status !== "ALL") params.set("status", filters.status);
     if (filters.source !== "ALL") params.set("source", filters.source);
+    if (filters.hideLowMatch) params.set("hideLowMatch", "true");
     if (filters.days) {
       const d = new Date();
       d.setDate(d.getDate() - Number(filters.days));
@@ -117,8 +136,8 @@ export default function OffersPage() {
     });
   }
 
-  const activeFilterCount = Object.entries(filters).filter(
-    ([key, v]) => v && !(key === "status" && v === "ALL") && !(key === "source" && v === "ALL")
+  const activeFilterCount = (Object.keys(filters) as Array<keyof Filters>).filter(
+    (key) => filters[key] !== DEFAULT_FILTERS[key]
   ).length;
 
   return (
@@ -149,7 +168,7 @@ export default function OffersPage() {
         <div className="flex items-center justify-between">
           <p className="text-sm font-medium text-slate-700">Filtres</p>
           {activeFilterCount > 0 && (
-            <button className="text-xs text-brand-600 hover:underline" onClick={() => setFilters(EMPTY_FILTERS)}>
+            <button className="text-xs text-brand-600 hover:underline" onClick={() => setFilters(DEFAULT_FILTERS)}>
               Reinitialiser
             </button>
           )}
@@ -206,14 +225,22 @@ export default function OffersPage() {
             value={filters.status}
             onChange={(e) => setFilters({ ...filters, status: e.target.value })}
           >
-            <option value="ALL">Tous statuts</option>
-            {Object.entries(STATUS_LABELS).map(([key, label]) => (
-              <option key={key} value={key}>
-                {label}
+            {STATUS_FILTER_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
               </option>
             ))}
           </select>
         </div>
+        <label className="flex items-center gap-2 text-sm text-slate-600">
+          <input
+            type="checkbox"
+            checked={filters.hideLowMatch}
+            onChange={(e) => setFilters({ ...filters, hideLowMatch: e.target.checked })}
+            className="h-4 w-4"
+          />
+          Masquer les offres peu pertinentes (recommandation &quot;Ignorer&quot;)
+        </label>
       </div>
 
       {loading ? (

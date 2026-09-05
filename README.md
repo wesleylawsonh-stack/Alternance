@@ -32,6 +32,18 @@ d'emploi/alternance :
   profil (jamais d'écrasement, uniquement des ajouts). Nécessite
   `ANTHROPIC_API_KEY` (pas de repli sans IA pour cette fonctionnalité — un
   faux chatbot sans IA n'aiderait pas).
+- **Localisations avec autocomplétion + régions** : le champ Localisations
+  de la page Critères propose des villes au fur et à mesure de la saisie
+  (API Adresse gouv.fr) ainsi que les régions administratives françaises
+  (ex: "Île-de-France") — sélectionner une région fait correspondre toute
+  offre située dans un département de cette région, indépendamment du rayon
+  de recherche défini pour les villes.
+- **Page Offres** : masque par défaut les offres refusées/ignorées (statut
+  "Refusé", qu'il vienne du bouton "Ignorer" ou d'un refus détecté via
+  Gmail) et celles jugées peu pertinentes (recommandation "Ignorer") —
+  désactivable via les filtres. La récupération automatique demande
+  désormais davantage d'offres par source (jusqu'à 100 pour France Travail,
+  50 pour Adzuna et La bonne alternance, contre 20 auparavant).
 - **Offres** : ajout manuel ou récupération automatique depuis plusieurs
   **sources légales à API officielle** (France Travail, Adzuna — jamais de
   scraping de LinkedIn/Indeed/Welcome to the Jungle, contraire à leurs

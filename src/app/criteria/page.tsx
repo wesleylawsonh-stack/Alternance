@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import SearchProfileChat from "@/components/SearchProfileChat";
+import LocationInput from "@/components/LocationInput";
 
 type Criteria = {
   jobTitles: string[];
@@ -132,13 +133,15 @@ export default function CriteriaPage() {
         </div>
 
         <div>
-          <label className="label">Localisations (separees par des virgules)</label>
-          <input
-            className="input"
-            placeholder="Ex: Paris, Lyon, Remote"
-            value={arrToText(criteria.locations)}
-            onChange={(e) => setCriteria({ ...criteria, locations: textToArr(e.target.value) })}
+          <label className="label">Localisations</label>
+          <LocationInput
+            value={criteria.locations}
+            onChange={(locations) => setCriteria({ ...criteria, locations })}
           />
+          <p className="text-xs text-slate-400 mt-1">
+            Tape le début d&apos;un nom de ville pour la sélectionner dans la liste, ou une région (ex: &quot;Ile-de-France&quot;) pour
+            inclure toutes les offres de cette région.
+          </p>
         </div>
 
         <div>

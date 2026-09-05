@@ -1,5 +1,6 @@
 import { extractSkills } from "./skills";
-import { distanceBetweenPlacesKm } from "./geocode";
+import { distanceBetweenPlacesKm, geocodeDetailed, departmentCodeFromCitycode } from "./geocode";
+import { departmentsForRegion } from "./frenchRegions";
 import { asStringArray, toJsonString } from "./json";
 import type { Criteria } from "@prisma/client";
 
@@ -156,25 +157,47 @@ function findExcludedKeyword(text: string, excludeKeywords: string[]): string | 
 }
 
 /**
- * Verifie si l'offre est dans le rayon de recherche. Ne penalise jamais si
- * l'information est indisponible ou impossible a determiner (geocodage
- * hors ligne, ville inconnue...) : on ne bloque jamais le matching pour un
- * probleme reseau.
+ * Verifie si l'offre est dans le rayon de recherche, ou dans l'une des
+ * regions recherchees. Chaque entree de criteria.locations est soit un nom
+ * de region connue (frenchRegions.ts) soit un nom de ville : les regions
+ * sont verifiees par appartenance de departement (l'offre est dans la
+ * region si son departement en fait partie, independamment d'un rayon),
+ * les villes par distance a vol d'oiseau + rayon (comportement existant).
+ * Ne penalise jamais si l'information est indisponible ou impossible a
+ * determiner (geocodage hors ligne, ville inconnue...) : on ne bloque
+ * jamais le matching pour un probleme reseau.
  */
 async function checkLocation(
   offerLocation: string | null,
   criteria: MatchCriteria
 ): Promise<{ ok: boolean; distanceKm: number | null }> {
   if (criteria.remote) return { ok: true, distanceKm: null };
-  if (!criteria.radiusKm || criteria.locations.length === 0 || !offerLocation) {
+  if (criteria.locations.length === 0 || !offerLocation) {
     return { ok: true, distanceKm: null };
   }
   if (/remote|teletravail|télétravail|distanciel/i.test(offerLocation)) {
     return { ok: true, distanceKm: null };
   }
 
+  const regionEntries = criteria.locations.filter((loc) => departmentsForRegion(loc));
+  const cityEntries = criteria.locations.filter((loc) => !departmentsForRegion(loc));
+
+  if (regionEntries.length > 0) {
+    const offerDetails = await geocodeDetailed(offerLocation);
+    const offerDept = departmentCodeFromCitycode(offerDetails?.citycode ?? null);
+    const inRegion = offerDept ? regionEntries.some((region) => departmentsForRegion(region)!.includes(offerDept)) : false;
+    if (inRegion) return { ok: true, distanceKm: null };
+    if (cityEntries.length === 0) {
+      // Seules des regions etaient demandees : hors de toutes, sauf si le
+      // departement de l'offre n'a pas pu etre determine (on ne bloque pas).
+      return { ok: !offerDept, distanceKm: null };
+    }
+  }
+
+  if (!criteria.radiusKm) return { ok: true, distanceKm: null };
+
   const distances = await Promise.all(
-    criteria.locations.map((loc) => distanceBetweenPlacesKm(loc, offerLocation))
+    cityEntries.map((loc) => distanceBetweenPlacesKm(loc, offerLocation))
   );
   const validDistances = distances.filter((d): d is number => d !== null);
   if (validDistances.length === 0) return { ok: true, distanceKm: null };

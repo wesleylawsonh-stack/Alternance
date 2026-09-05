@@ -78,3 +78,52 @@ export async function distanceBetweenPlacesKm(placeA: string, placeB: string): P
   if (!a || !b) return null;
   return haversineDistanceKm(a, b);
 }
+
+type GeocodeDetails = LatLon & { citycode: string | null };
+
+const detailedCache = new Map<string, GeocodeDetails | null>();
+
+/**
+ * Comme geocode(), mais renvoie aussi le code INSEE de la commune
+ * (properties.citycode), utilise pour deriver le departement et faire du
+ * matching par region (voir frenchRegions.ts).
+ */
+export async function geocodeDetailed(query: string): Promise<GeocodeDetails | null> {
+  const key = normalizeQuery(query);
+  if (!key) return null;
+  if (detailedCache.has(key)) return detailedCache.get(key) ?? null;
+
+  const url = `https://api-adresse.data.gouv.fr/search/?q=${encodeURIComponent(query)}&limit=1`;
+  const res = await fetchWithTimeout(url, 3000);
+  if (!res || !res.ok) {
+    detailedCache.set(key, null);
+    return null;
+  }
+
+  try {
+    const json = (await res.json()) as {
+      features?: Array<{
+        geometry?: { coordinates?: [number, number] };
+        properties?: { citycode?: string };
+      }>;
+    };
+    const feature = json.features?.[0];
+    const coords = feature?.geometry?.coordinates;
+    if (!coords) {
+      detailedCache.set(key, null);
+      return null;
+    }
+    const result: GeocodeDetails = { lon: coords[0], lat: coords[1], citycode: feature?.properties?.citycode ?? null };
+    detailedCache.set(key, result);
+    return result;
+  } catch {
+    detailedCache.set(key, null);
+    return null;
+  }
+}
+
+/** Code departement (2 chiffres, "2A"/"2B" pour la Corse, 3 chiffres pour l'outre-mer) a partir d'un code INSEE commune. */
+export function departmentCodeFromCitycode(citycode: string | null): string | null {
+  if (!citycode) return null;
+  return citycode.startsWith("97") ? citycode.slice(0, 3) : citycode.slice(0, 2).toUpperCase();
+}
