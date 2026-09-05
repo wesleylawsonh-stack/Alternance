@@ -1,0 +1,254 @@
+"use client";
+
+import { Suspense, useEffect, useState } from "react";
+import Link from "next/link";
+import { useSearchParams } from "next/navigation";
+
+type Proposal = {
+  id: string;
+  section: "HEADLINE" | "SUMMARY" | "EXPERIENCE" | "SKILLS";
+  label: string;
+  original: string;
+  proposed: string;
+  rationale: string | null;
+};
+
+type Decision = {
+  action: "accept" | "reject";
+  editedText?: string;
+};
+
+export default function CvEditorPage() {
+  return (
+    <Suspense fallback={<p className="text-slate-500">Chargement...</p>}>
+      <CvEditorContent />
+    </Suspense>
+  );
+}
+
+function CvEditorContent() {
+  const searchParams = useSearchParams();
+  const offerId = searchParams.get("offerId");
+
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [proposals, setProposals] = useState<Proposal[]>([]);
+  const [usedAi, setUsedAi] = useState(false);
+  const [offerInfo, setOfferInfo] = useState<{ title: string; company: string | null } | null>(null);
+  const [decisions, setDecisions] = useState<Record<string, Decision>>({});
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [finalizing, setFinalizing] = useState(false);
+  const [result, setResult] = useState<{ id: string; label: string } | null>(null);
+
+  useEffect(() => {
+    fetch("/api/cv/propose-edits", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ offerId: offerId || undefined }),
+    })
+      .then(async (r) => {
+        const data = await r.json();
+        if (!r.ok) throw new Error(data.error || "Erreur lors de l'analyse du CV.");
+        setProposals(data.proposals);
+        setUsedAi(data.usedAi);
+        setOfferInfo(data.offer);
+        const initialDecisions: Record<string, Decision> = {};
+        for (const p of data.proposals as Proposal[]) {
+          initialDecisions[p.id] = { action: "accept" };
+        }
+        setDecisions(initialDecisions);
+      })
+      .catch((err) => setError(err.message))
+      .finally(() => setLoading(false));
+  }, [offerId]);
+
+  function setDecision(id: string, decision: Decision) {
+    setDecisions((prev) => ({ ...prev, [id]: decision }));
+  }
+
+  async function handleFinalize() {
+    setFinalizing(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/cv/finalize", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          offerId: offerId || undefined,
+          proposals,
+          decisions: Object.entries(decisions).map(([id, d]) => ({ id, ...d })),
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Erreur lors de la generation du CV.");
+      setResult(data.version);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erreur reseau.");
+    } finally {
+      setFinalizing(false);
+    }
+  }
+
+  if (loading) return <p className="text-slate-500">Analyse du CV en cours...</p>;
+
+  if (result) {
+    return (
+      <div className="space-y-6">
+        <div className="card p-6 text-center space-y-4">
+          <h1 className="text-xl font-semibold text-slate-900">CV genere : {result.label}</h1>
+          <div className="flex justify-center gap-3">
+            <a className="btn-primary" href={`/api/cv-versions/${result.id}/download`}>
+              Telecharger le PDF
+            </a>
+            <Link className="btn-secondary" href="/cv-history">
+              Voir dans Mes CV
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-semibold text-slate-900">Editeur de CV</h1>
+        <p className="text-slate-500 mt-1">
+          {offerInfo
+            ? `Adaptation pour "${offerInfo.title}"${offerInfo.company ? ` chez ${offerInfo.company}` : ""}.`
+            : "Amelioration generale de ton CV."}{" "}
+          Relis chaque proposition avant de valider : rien n&apos;est modifie sans ton accord.
+        </p>
+      </div>
+
+      {error && <p className="card p-4 text-sm text-red-600">{error}</p>}
+
+      {!usedAi && (
+        <p className="card p-4 text-sm text-amber-800 bg-amber-50">
+          Aucune cle IA configuree (ANTHROPIC_API_KEY) : seul le reordonnancement des competences en lien avec
+          l&apos;offre est propose automatiquement. Connecte une cle IA pour des reformulations d&apos;accroche et
+          d&apos;experiences.
+        </p>
+      )}
+
+      {proposals.length === 0 ? (
+        <p className="card p-6 text-center text-slate-500">
+          Aucune amelioration proposee pour l&apos;instant. Tu peux tout de meme generer une version (identique a
+          l&apos;original) pour la conserver dans &quot;Mes CV&quot;.
+        </p>
+      ) : (
+        <div className="space-y-4">
+          {proposals.map((p) => (
+            <ProposalCard
+              key={p.id}
+              proposal={p}
+              decision={decisions[p.id] ?? { action: "accept" }}
+              editing={editingId === p.id}
+              onEdit={() => setEditingId(p.id)}
+              onStopEdit={() => setEditingId(null)}
+              onDecide={(d) => setDecision(p.id, d)}
+            />
+          ))}
+        </div>
+      )}
+
+      <div className="flex items-center gap-3">
+        <button className="btn-primary" onClick={handleFinalize} disabled={finalizing}>
+          {finalizing ? "Generation..." : "Valider et generer le CV"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function ProposalCard({
+  proposal,
+  decision,
+  editing,
+  onEdit,
+  onStopEdit,
+  onDecide,
+}: {
+  proposal: Proposal;
+  decision: Decision;
+  editing: boolean;
+  onEdit: () => void;
+  onStopEdit: () => void;
+  onDecide: (d: Decision) => void;
+}) {
+  const displayedProposed = decision.editedText ?? proposal.proposed;
+  const isRejected = decision.action === "reject";
+
+  return (
+    <div className="card p-5">
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="font-medium text-slate-900">{proposal.label}</h3>
+        <div className="flex gap-1.5">
+          <button
+            className={`px-2.5 py-1 rounded-full text-xs font-medium ${
+              decision.action === "accept" && !editing ? "bg-green-600 text-white" : "bg-slate-100 text-slate-600"
+            }`}
+            onClick={() => {
+              onStopEdit();
+              onDecide({ action: "accept" });
+            }}
+          >
+            Accepter
+          </button>
+          <button
+            className={`px-2.5 py-1 rounded-full text-xs font-medium ${
+              editing ? "bg-brand-600 text-white" : "bg-slate-100 text-slate-600"
+            }`}
+            onClick={onEdit}
+          >
+            Modifier
+          </button>
+          <button
+            className={`px-2.5 py-1 rounded-full text-xs font-medium ${
+              isRejected ? "bg-red-600 text-white" : "bg-slate-100 text-slate-600"
+            }`}
+            onClick={() => {
+              onStopEdit();
+              onDecide({ action: "reject" });
+            }}
+          >
+            Refuser
+          </button>
+        </div>
+      </div>
+
+      <div className="grid sm:grid-cols-2 gap-3">
+        <div>
+          <p className="text-xs font-medium text-slate-500 mb-1">Version actuelle</p>
+          <p className="text-sm text-slate-600 bg-slate-50 rounded-lg p-3 whitespace-pre-wrap">
+            {proposal.original || <span className="text-slate-400">(vide)</span>}
+          </p>
+        </div>
+        <div>
+          <p className="text-xs font-medium text-slate-500 mb-1">Proposition IA</p>
+          {editing ? (
+            <textarea
+              className="input text-sm"
+              rows={4}
+              defaultValue={displayedProposed}
+              onChange={(e) => onDecide({ action: "accept", editedText: e.target.value })}
+              autoFocus
+            />
+          ) : (
+            <p
+              className={`text-sm rounded-lg p-3 whitespace-pre-wrap ${
+                isRejected ? "bg-slate-50 text-slate-400 line-through" : "bg-green-50 text-green-900"
+              }`}
+            >
+              {displayedProposed}
+            </p>
+          )}
+        </div>
+      </div>
+
+      {proposal.rationale && !isRejected && (
+        <p className="text-xs text-slate-400 italic mt-2">{proposal.rationale}</p>
+      )}
+    </div>
+  );
+}

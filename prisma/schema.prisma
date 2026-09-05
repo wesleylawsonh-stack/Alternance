@@ -75,8 +75,6 @@ model Offer {
   missingSkills        String? // JSON string[]
   applicationStatus    String    @default("NOT_APPLIED") // NOT_APPLIED | APPLIED | INTERVIEW | OFFER | REJECTED
   comments             String? // notes libres + journal des mises a jour automatiques (Gmail)
-  adaptedCvText        String?
-  adaptedCvGeneratedAt DateTime?
   postedAt             DateTime?
   fetchedAt            DateTime  @default(now())
   createdAt            DateTime  @default(now())

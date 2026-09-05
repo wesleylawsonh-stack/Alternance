@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 
 type Profile = {
   fullName: string | null;
@@ -162,6 +163,20 @@ export default function ProfilePage() {
                 </span>
               ))}
             </div>
+          </div>
+        )}
+
+        {profile.cvFileName && (
+          <div className="mt-4 pt-4 border-t border-slate-100 flex items-center justify-between flex-wrap gap-3">
+            <div>
+              <h3 className="text-sm font-medium text-slate-800">Analyser et ameliorer mon CV</h3>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Accroche, descriptions d&apos;experiences, competences : revois chaque proposition avant de valider.
+              </p>
+            </div>
+            <Link className="btn-primary" href="/cv-editor">
+              Analyser et ameliorer mon CV
+            </Link>
           </div>
         )}
       </section>

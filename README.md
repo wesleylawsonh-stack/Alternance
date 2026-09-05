@@ -12,13 +12,20 @@ d'emploi/alternance :
 - **Offres** : ajout manuel ou récupération automatique (API France
   Travail), avec un **score de compatibilité en %** entre le CV et chaque
   offre, et le détail des **compétences manquantes**.
-- **Adapter mon CV** : génère un nouveau CV orienté pour l'offre choisie
-  (réordonnancement des compétences/expériences existantes, jamais
-  d'invention de compétence absente du CV original), téléchargeable en PDF
-  avec un template propre et professionnel.
+- **Éditeur de CV assisté par IA** : depuis une offre ("Adapter mon CV à
+  cette offre") ou depuis la page Profil ("Analyser et améliorer mon CV"),
+  propose des améliorations de formulation (accroche, résumé, expériences)
+  et un réordonnancement des compétences pertinentes. Chaque proposition
+  s'affiche en comparatif version actuelle / proposition IA, avec
+  Accepter / Modifier / Refuser — rien n'est appliqué sans validation.
+  Garde-fous anti-invention à plusieurs niveaux (prompt strict, filtrage
+  programmatique des compétences proposées, rejet des réponses
+  démesurément plus longues que l'original). Génère ensuite une nouvelle
+  version de CV en PDF (template propre et professionnel).
 - **Mes CV** : retrouve le CV original (fichier importé tel quel si Vercel
   Blob est configuré, sinon reconstruit depuis le texte extrait) ainsi que
-  les futures versions améliorées ou adaptées à des offres précises.
+  les versions améliorées ou adaptées à des offres précises (ex:
+  `CV_Loreal_BusinessDeveloper`), téléchargement et suppression.
 - **Statut de candidature** (non postulé / postulé / entretien / offre reçue
   / refusé), commentaires libres et lien direct vers l'offre originale.
 - **Export Excel** : télécharge un fichier `.xlsx` (entreprise, poste,
@@ -223,7 +230,8 @@ src/lib/
   cvParser.ts               Analyse heuristique du texte du CV
   skills.ts                 Dictionnaire de competences + extraction
   matching.ts                Calcul du score de compatibilite
-  ai.ts                      Adaptation de CV + classification d'emails (IA ou fallback)
+  ai.ts                      Propositions d'edition de CV + classification d'emails (IA ou fallback)
+  cvVersion.ts                Application des decisions accepter/modifier/refuser + nommage des versions
   franceTravail.ts           Adaptateur API France Travail
   gmail.ts                   Client OAuth Gmail + lecture des messages
   emailMatcher.ts             Association email <-> offre + classification du statut
@@ -233,7 +241,7 @@ src/lib/
   pdfText.ts                  Extraction du texte d'un PDF importe
   cvTemplate.ts                Template PDF (design soigne) pour toutes les versions de CV
 src/app/
-  profile/, criteria/, offers/, cv-history/, integrations/  Pages
+  profile/, criteria/, offers/, cv-editor/, cv-history/, integrations/  Pages
   api/                        Routes API (profile, criteria, offers, cv/upload,
                                cv-versions, offers/export, gmail/...)
 ```

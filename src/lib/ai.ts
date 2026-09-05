@@ -13,85 +13,179 @@ function getClient(): Anthropic {
   return client;
 }
 
-export type AdaptCvInput = {
-  profile: {
-    fullName: string | null;
-    headline: string | null;
-    email: string | null;
-    phone: string | null;
-    location: string | null;
-  };
-  cv: ParsedCv;
-  offer: {
-    title: string;
-    company: string | null;
-    description: string;
-  };
-  matchedSkills: string[];
-  missingSkills: string[];
+export type CvEditSection = "HEADLINE" | "SUMMARY" | "EXPERIENCE" | "SKILLS";
+
+export type CvEditProposal = {
+  id: string; // "headline" | "summary" | "skills" | "experience-<index>"
+  section: CvEditSection;
+  label: string;
+  original: string;
+  proposed: string;
+  rationale: string | null;
 };
 
-const SYSTEM_PROMPT = `Tu es un assistant qui adapte un CV existant a une offre d'emploi precise.
-REGLE ABSOLUE : tu ne dois JAMAIS inventer, ajouter ou supposer une competence,
-une experience, un diplome ou une donnee qui n'est pas deja presente dans le
-CV original fourni. Tu peux seulement :
-- reformuler des phrases existantes pour les rendre plus percutantes,
-- reordonner les competences et experiences pour mettre en avant celles qui
-  correspondent le mieux a l'offre,
-- resumer ou raccourcir des elements existants,
-- adapter le ton du profil/accroche en restant fidele aux faits fournis.
-Si une competence demandee par l'offre est absente du CV, ne l'ajoute pas :
-elle doit simplement ne pas apparaitre. Reponds uniquement avec le CV adapte
-final, en texte brut structure (sections : ACCROCHE, COMPETENCES, EXPERIENCE,
-FORMATION, LANGUES), sans commentaire ni explication autour.`;
+export type ProposeCvEditsInput = {
+  cv: ParsedCv;
+  currentHeadline: string | null;
+  offer?: { title: string; company: string | null; description: string } | null;
+};
 
-export async function adaptCvWithAi(input: AdaptCvInput): Promise<string> {
-  const anthropic = getClient();
+const EDIT_SYSTEM_PROMPT = `Tu es un editeur de CV assiste par IA. Tu proposes des ameliorations de
+formulation pour un CV existant, jamais de nouvelles informations.
+REGLE ABSOLUE : tu ne dois JAMAIS inventer, ajouter ou supposer une
+competence, une experience, un diplome, un chiffre ou un resultat qui
+n'est pas deja present dans le texte fourni. Tu peux uniquement reformuler,
+clarifier, rendre plus percutant avec des verbes d'action, ou reordonner
+des elements deja presents. Si une offre est fournie, mets en avant ce qui
+correspond deja au poste vise (sans inventer une correspondance qui
+n'existe pas).
 
-  const userPrompt = `CV ORIGINAL (texte brut, source de verite absolue) :
+Reponds UNIQUEMENT avec un tableau JSON (pas de texte autour, pas de
+markdown), ou chaque element a la forme :
+{"id": "...", "proposed": "...", "rationale": "..."}
+Les "id" valides sont : "headline", "summary", "skills", et "experience-0",
+"experience-1", etc. selon les experiences fournies. N'inclus un id QUE si
+tu proposes reellement un changement (omets les elements que tu ne
+modifies pas). Pour "skills", "proposed" est la liste des competences
+FOURNIES reordonnees, separees par des virgules (n'en ajoute et n'en
+retire aucune). "rationale" est une phrase courte expliquant le
+changement. Si tu n'as aucune amelioration a proposer, reponds avec un
+tableau vide [].`;
+
+function buildEditUserPrompt(input: ProposeCvEditsInput): string {
+  const { cv, offer, currentHeadline } = input;
+  const experiencesList = cv.sections.experiences
+    .map((exp, i) => `experience-${i}: ${exp}`)
+    .join("\n");
+
+  let prompt = `CV ACTUEL (source de verite absolue, ne rien inventer au-dela) :
+Accroche actuelle (headline) : ${currentHeadline ?? "(absente)"}
+Resume/profil actuel (summary) : ${cv.sections.summary ?? "(absent)"}
+Competences actuelles (skills) : ${cv.skills.join(", ") || "(aucune)"}
+Experiences actuelles :
+${experiencesList || "(aucune)"}
+
+Texte brut complet du CV (contexte) :
 """
-${input.cv.rawText}
-"""
+${cv.rawText}
+"""`;
 
-Competences deja detectees dans ce CV : ${input.cv.skills.join(", ") || "aucune"}
+  if (offer) {
+    prompt += `
 
 OFFRE VISEE :
-Poste : ${input.offer.title}
-Entreprise : ${input.offer.company ?? "non precisee"}
+Poste : ${offer.title}
+Entreprise : ${offer.company ?? "non precisee"}
 Description :
 """
-${input.offer.description}
+${offer.description}
 """
+Mets en avant, parmi les elements deja presents dans le CV, ceux qui
+correspondent le mieux a cette offre.`;
+  } else {
+    prompt += `
 
-Competences du CV qui correspondent a l'offre : ${input.matchedSkills.join(", ") || "aucune"}
-Competences demandees par l'offre mais ABSENTES du CV (a ne surtout pas ajouter) : ${
-    input.missingSkills.join(", ") || "aucune"
+Aucune offre precise : propose des ameliorations generales (clarte,
+impact, verbes d'action, suppression de formulations vagues) sans viser
+un poste particulier.`;
   }
 
-Produis le CV adapte a cette offre en respectant strictement la regle de non-invention.`;
+  return prompt;
+}
+
+function truncateGuard(original: string, proposed: string): boolean {
+  // Garde-fou anti-fabrication : une proposition demesurement plus longue
+  // que l'original a plus de chances d'ajouter une information inventee
+  // que de simplement reformuler.
+  if (!original) return proposed.length <= 400;
+  return proposed.length <= original.length * 2.5 + 60;
+}
+
+function sanitizeSkillsProposal(originalSkills: string[], proposedRaw: string): string {
+  const proposedList = proposedRaw
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  const originalSet = new Set(originalSkills.map((s) => s.toLowerCase()));
+  // Ne garde que des competences deja presentes (jamais d'invention), puis
+  // ajoute a la fin celles que l'IA aurait omises (aucune suppression
+  // silencieuse : seul l'ordre change).
+  const kept = proposedList.filter((s) => originalSet.has(s.toLowerCase()));
+  const keptSet = new Set(kept.map((s) => s.toLowerCase()));
+  const missing = originalSkills.filter((s) => !keptSet.has(s.toLowerCase()));
+  return [...kept, ...missing].join(", ");
+}
+
+export async function proposeCvEditsWithAi(input: ProposeCvEditsInput): Promise<CvEditProposal[]> {
+  const anthropic = getClient();
+  const { cv, currentHeadline } = input;
 
   const message = await anthropic.messages.create({
     model: process.env.ANTHROPIC_MODEL || "claude-sonnet-5",
-    max_tokens: 2000,
-    system: SYSTEM_PROMPT,
-    messages: [{ role: "user", content: userPrompt }],
+    max_tokens: 2500,
+    system: EDIT_SYSTEM_PROMPT,
+    messages: [{ role: "user", content: buildEditUserPrompt(input) }],
   });
 
   const textBlock = message.content.find((b) => b.type === "text");
-  if (!textBlock || textBlock.type !== "text") {
-    throw new Error("Reponse IA vide");
+  if (!textBlock || textBlock.type !== "text") throw new Error("Reponse IA vide");
+
+  const jsonMatch = textBlock.text.match(/\[[\s\S]*\]/);
+  if (!jsonMatch) throw new Error("Reponse IA non structuree (JSON attendu)");
+  const rawItems = JSON.parse(jsonMatch[0]) as Array<{ id?: string; proposed?: string; rationale?: string }>;
+
+  const proposals: CvEditProposal[] = [];
+  const seen = new Set<string>();
+
+  for (const item of rawItems) {
+    const id = typeof item.id === "string" ? item.id : "";
+    const proposedRaw = typeof item.proposed === "string" ? item.proposed.trim() : "";
+    if (!id || !proposedRaw || seen.has(id)) continue;
+
+    if (id === "headline") {
+      const original = currentHeadline ?? "";
+      if (proposedRaw === original || !truncateGuard(original, proposedRaw)) continue;
+      proposals.push({ id, section: "HEADLINE", label: "Accroche", original, proposed: proposedRaw, rationale: item.rationale ?? null });
+    } else if (id === "summary") {
+      const original = cv.sections.summary ?? "";
+      if (proposedRaw === original || !truncateGuard(original, proposedRaw)) continue;
+      proposals.push({ id, section: "SUMMARY", label: "Resume / profil", original, proposed: proposedRaw, rationale: item.rationale ?? null });
+    } else if (id === "skills") {
+      const original = cv.skills.join(", ");
+      const proposed = sanitizeSkillsProposal(cv.skills, proposedRaw);
+      if (proposed === original) continue;
+      proposals.push({ id, section: "SKILLS", label: "Competences", original, proposed, rationale: item.rationale ?? null });
+    } else if (id.startsWith("experience-")) {
+      const index = Number(id.slice("experience-".length));
+      const original = cv.sections.experiences[index];
+      if (!Number.isInteger(index) || original === undefined) continue;
+      if (proposedRaw === original || !truncateGuard(original, proposedRaw)) continue;
+      proposals.push({
+        id,
+        section: "EXPERIENCE",
+        label: `Experience ${index + 1}`,
+        original,
+        proposed: proposedRaw,
+        rationale: item.rationale ?? null,
+      });
+    } else {
+      continue;
+    }
+    seen.add(id);
   }
-  return textBlock.text.trim();
+
+  return proposals;
 }
 
 /**
- * Adaptation sans IA : reordonne les competences et selectionne les
- * experiences/elements du CV original qui partagent des mots-cles avec
- * l'offre. Ne reformule rien, ne fabrique rien : n'utilise que du texte
- * deja present dans le CV.
+ * Propositions sans IA : reordonne uniquement les competences (celles
+ * correspondant a l'offre en premier, si une offre est fournie). Aucune
+ * reformulation n'est proposee sans IA : mieux vaut ne rien proposer que
+ * fabriquer un texte.
  */
-export function adaptCvWithTemplate(input: AdaptCvInput): string {
-  const { profile, cv, offer, matchedSkills } = input;
+export function proposeCvEditsWithTemplate(input: ProposeCvEditsInput): CvEditProposal[] {
+  const { cv, offer } = input;
+  if (!offer || cv.skills.length === 0) return [];
 
   const offerWords = new Set(
     offer.description
@@ -102,60 +196,37 @@ export function adaptCvWithTemplate(input: AdaptCvInput): string {
       .filter((w) => w.length > 3)
   );
 
-  const scoreLine = (line: string): number => {
-    const words = line
-      .toLowerCase()
-      .normalize("NFD")
-      .replace(/[̀-ͯ]/g, "")
-      .split(/[^a-z0-9+]+/)
-      .filter((w) => w.length > 3);
-    return words.reduce((acc, w) => acc + (offerWords.has(w) ? 1 : 0), 0);
-  };
-
-  const orderedSkills = [...cv.skills].sort((a, b) => {
-    const aMatched = matchedSkills.includes(a) ? 1 : 0;
-    const bMatched = matchedSkills.includes(b) ? 1 : 0;
-    return bMatched - aMatched;
+  const original = cv.skills.join(", ");
+  const proposedOrder = [...cv.skills].sort((a, b) => {
+    const aMatch = offerWords.has(a.toLowerCase()) ? 1 : 0;
+    const bMatch = offerWords.has(b.toLowerCase()) ? 1 : 0;
+    return bMatch - aMatch;
   });
+  const proposed = proposedOrder.join(", ");
+  if (proposed === original) return [];
 
-  const orderedExperiences = [...cv.sections.experiences].sort((a, b) => scoreLine(b) - scoreLine(a));
-  const orderedEducation = [...cv.sections.education];
-
-  const lines: string[] = [];
-  lines.push(`ACCROCHE`);
-  lines.push(
-    cv.sections.summary
-      ? cv.sections.summary
-      : `${profile.headline ?? profile.fullName ?? "Candidat"} - candidature pour le poste de ${offer.title}${
-          offer.company ? ` chez ${offer.company}` : ""
-        }.`
-  );
-  lines.push("");
-  lines.push("COMPETENCES");
-  lines.push(orderedSkills.length ? orderedSkills.join(", ") : "(aucune competence detectee dans le CV original)");
-  lines.push("");
-  lines.push("EXPERIENCE");
-  lines.push(orderedExperiences.length ? orderedExperiences.join("\n") : "(non detectee automatiquement, voir CV original)");
-  lines.push("");
-  lines.push("FORMATION");
-  lines.push(orderedEducation.length ? orderedEducation.join("\n") : "(non detectee automatiquement, voir CV original)");
-  lines.push("");
-  lines.push("LANGUES");
-  lines.push(cv.sections.languages.length ? cv.sections.languages.join(", ") : "(non detectees automatiquement)");
-
-  return lines.join("\n");
+  return [
+    {
+      id: "skills",
+      section: "SKILLS",
+      label: "Competences",
+      original,
+      proposed,
+      rationale: "Competences en lien avec l'offre mises en avant en premier.",
+    },
+  ];
 }
 
-export async function adaptCv(input: AdaptCvInput): Promise<{ text: string; usedAi: boolean }> {
+export async function proposeCvEdits(input: ProposeCvEditsInput): Promise<{ proposals: CvEditProposal[]; usedAi: boolean }> {
   if (isAiEnabled()) {
     try {
-      const text = await adaptCvWithAi(input);
-      return { text, usedAi: true };
+      const proposals = await proposeCvEditsWithAi(input);
+      return { proposals, usedAi: true };
     } catch (err) {
-      console.error("Adaptation IA impossible, repli sur le mode template:", err);
+      console.error("Proposition d'edition IA impossible, repli sur le mode template:", err);
     }
   }
-  return { text: adaptCvWithTemplate(input), usedAi: false };
+  return { proposals: proposeCvEditsWithTemplate(input), usedAi: false };
 }
 
 const HEADLINE_SYSTEM_PROMPT = `Tu rediges une accroche professionnelle courte (une seule phrase, moins de

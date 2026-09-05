@@ -1,9 +1,11 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const offerId = req.nextUrl.searchParams.get("offerId");
+
   const versions = await prisma.cvVersion.findMany({
-    where: { profileId: "singleton" },
+    where: { profileId: "singleton", ...(offerId ? { offerId } : {}) },
     orderBy: { createdAt: "desc" },
     select: {
       id: true,

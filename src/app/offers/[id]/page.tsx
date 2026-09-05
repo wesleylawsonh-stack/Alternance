@@ -20,29 +20,33 @@ type Offer = {
   requiredSkills: unknown;
   applicationStatus: string;
   comments: string | null;
-  adaptedCvText: string | null;
-  adaptedCvGeneratedAt: string | null;
+};
+
+type CvVersionSummary = {
+  id: string;
+  label: string;
+  createdAt: string;
 };
 
 export default function OfferDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const [offer, setOffer] = useState<Offer | null>(null);
+  const [cvVersions, setCvVersions] = useState<CvVersionSummary[]>([]);
   const [loading, setLoading] = useState(true);
-  const [adapting, setAdapting] = useState(false);
-  const [adaptError, setAdaptError] = useState<string | null>(null);
-  const [adaptInfo, setAdaptInfo] = useState<string | null>(null);
   const [comments, setComments] = useState("");
   const [savingComments, setSavingComments] = useState(false);
   const [commentsSaved, setCommentsSaved] = useState(false);
 
   function load() {
-    fetch(`/api/offers/${id}`)
-      .then((r) => r.json())
-      .then((data) => {
-        setOffer(data.offer ?? null);
-        setComments(data.offer?.comments ?? "");
-        setLoading(false);
-      });
+    Promise.all([
+      fetch(`/api/offers/${id}`).then((r) => r.json()),
+      fetch(`/api/cv-versions?offerId=${id}`).then((r) => r.json()),
+    ]).then(([offerData, versionsData]) => {
+      setOffer(offerData.offer ?? null);
+      setComments(offerData.offer?.comments ?? "");
+      setCvVersions(versionsData.versions ?? []);
+      setLoading(false);
+    });
   }
 
   useEffect(load, [id]);
@@ -55,26 +59,6 @@ export default function OfferDetailPage({ params }: { params: Promise<{ id: stri
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ applicationStatus: status }),
     });
-  }
-
-  async function handleAdapt() {
-    setAdapting(true);
-    setAdaptError(null);
-    setAdaptInfo(null);
-    try {
-      const res = await fetch(`/api/offers/${id}/adapt-cv`, { method: "POST" });
-      const data = await res.json();
-      if (!res.ok) {
-        setAdaptError(data.error || "Erreur lors de l'adaptation du CV.");
-      } else {
-        setOffer(data.offer);
-        setAdaptInfo(data.usedAi ? "CV adapte genere par l'IA." : "CV adapte genere (mode sans IA : reordonnancement du contenu existant).");
-      }
-    } catch {
-      setAdaptError("Erreur reseau.");
-    } finally {
-      setAdapting(false);
-    }
   }
 
   async function handleSaveComments() {
@@ -184,28 +168,29 @@ export default function OfferDetailPage({ params }: { params: Promise<{ id: stri
       <div className="card p-6">
         <div className="flex items-center justify-between flex-wrap gap-3">
           <h2 className="font-medium text-slate-900">CV adapte pour cette offre</h2>
-          <div className="flex gap-2">
-            <button className="btn-primary" onClick={handleAdapt} disabled={adapting}>
-              {adapting ? "Adaptation en cours..." : "Adapter mon CV"}
-            </button>
-            {offer.adaptedCvText && (
-              <a className="btn-secondary" href={`/api/offers/${id}/adapted-cv/download`}>
-                Telecharger le PDF
-              </a>
-            )}
-          </div>
+          <Link className="btn-primary" href={`/cv-editor?offerId=${id}`}>
+            Adapter mon CV a cette offre
+          </Link>
         </div>
-        {adaptError && <p className="text-sm text-red-600 mt-3">{adaptError}</p>}
-        {adaptInfo && <p className="text-sm text-green-700 mt-3">{adaptInfo}</p>}
-        {offer.adaptedCvText && (
-          <pre className="mt-4 text-sm text-slate-700 whitespace-pre-wrap bg-slate-50 rounded-lg p-4 border border-slate-200">
-            {offer.adaptedCvText}
-          </pre>
-        )}
-        {!offer.adaptedCvText && !adapting && (
-          <p className="text-sm text-slate-400 mt-3">
-            Aucun CV adapte genere pour l&apos;instant. Clique sur &quot;Adapter mon CV&quot; (le CV original doit d&apos;abord etre importe sur la page Profil).
-          </p>
+        <p className="text-sm text-slate-500 mt-2">
+          Analyse l&apos;offre, propose des ameliorations de formulation et un reordonnancement des
+          competences/experiences pertinentes, avec une revision avant/apres que tu valides toi-meme.
+        </p>
+
+        {cvVersions.length > 0 && (
+          <div className="mt-4 space-y-2">
+            {cvVersions.map((v) => (
+              <div key={v.id} className="flex items-center justify-between bg-slate-50 rounded-lg p-3">
+                <div>
+                  <p className="text-sm font-medium text-slate-800">{v.label}</p>
+                  <p className="text-xs text-slate-500">{new Date(v.createdAt).toLocaleString("fr-FR")}</p>
+                </div>
+                <a className="btn-secondary" href={`/api/cv-versions/${v.id}/download`}>
+                  Telecharger
+                </a>
+              </div>
+            ))}
+          </div>
         )}
       </div>
     </div>
