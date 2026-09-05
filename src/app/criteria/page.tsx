@@ -116,13 +116,9 @@ export default function CriteriaPage() {
           />
           <p className="text-xs text-slate-400 mt-1">
             Utilise en complement des criteres ci-dessous pour affiner le score de matching et donner du contexte
-            a l&apos;IA lors de l&apos;adaptation de ton CV a une offre.
+            a l&apos;IA lors de l&apos;adaptation de ton CV a une offre. Ou utilise la bulle de discussion en bas à
+            droite pour que l&apos;IA t&apos;aide à la préciser.
           </p>
-          <div className="mt-3">
-            <SearchProfileChat
-              onFinalized={(searchDescription) => setCriteria((c) => ({ ...c, searchDescription }))}
-            />
-          </div>
         </div>
 
         <div>
@@ -245,6 +241,10 @@ export default function CriteriaPage() {
           {savedMsg && <span className="text-sm text-green-700">{savedMsg}</span>}
         </div>
       </form>
+
+      {/* En dehors du <form> ci-dessus : un <form> imbrique y ferait
+          remonter l'evenement "submit" au formulaire parent. */}
+      <SearchProfileChat onFinalized={(searchDescription) => setCriteria((c) => ({ ...c, searchDescription }))} />
     </div>
   );
 }
