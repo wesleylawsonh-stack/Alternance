@@ -14,6 +14,26 @@ function getClient(): Anthropic {
   return client;
 }
 
+/**
+ * Les erreurs d'appel IA sont interceptees et remplacees par un repli
+ * heuristique (voir chaque fonction *WithAi ci-dessous) : l'utilisateur ne
+ * doit jamais voir un plantage juste parce que l'IA est indisponible. Mais
+ * un repli silencieux rend impossible de diagnostiquer un vrai probleme
+ * (mauvaise cle, quota, panne reseau...) : cette fonction extrait un
+ * message exploitable a partir des classes d'erreur typees du SDK pour le
+ * remonter a l'utilisateur (cote route API / UI), sans jamais bloquer le
+ * repli lui-meme.
+ */
+function describeAiError(err: unknown): string {
+  if (err instanceof Anthropic.AuthenticationError) return "Cle API Anthropic invalide ou revoquee (401).";
+  if (err instanceof Anthropic.PermissionDeniedError) return "Cle API Anthropic sans les permissions necessaires (403).";
+  if (err instanceof Anthropic.RateLimitError) return "Limite de requetes Anthropic atteinte (429).";
+  if (err instanceof Anthropic.APIConnectionError) return `Connexion a l'API Anthropic impossible : ${err.message}`;
+  if (err instanceof Anthropic.APIError) return `Erreur API Anthropic (${err.status ?? "?"}) : ${err.message}`;
+  if (err instanceof Error) return err.message;
+  return String(err);
+}
+
 export type CvEditSection = "HEADLINE" | "SUMMARY" | "EXPERIENCE" | "SKILLS";
 
 export type CvEditProposal = {
@@ -218,13 +238,17 @@ export function proposeCvEditsWithTemplate(input: ProposeCvEditsInput): CvEditPr
   ];
 }
 
-export async function proposeCvEdits(input: ProposeCvEditsInput): Promise<{ proposals: CvEditProposal[]; usedAi: boolean }> {
+export async function proposeCvEdits(
+  input: ProposeCvEditsInput
+): Promise<{ proposals: CvEditProposal[]; usedAi: boolean; aiError?: string }> {
   if (isAiEnabled()) {
     try {
       const proposals = await proposeCvEditsWithAi(input);
       return { proposals, usedAi: true };
     } catch (err) {
+      const aiError = describeAiError(err);
       console.error("Proposition d'edition IA impossible, repli sur le mode template:", err);
+      return { proposals: proposeCvEditsWithTemplate(input), usedAi: false, aiError };
     }
   }
   return { proposals: proposeCvEditsWithTemplate(input), usedAi: false };
@@ -294,13 +318,17 @@ export function suggestHeadlineWithTemplate(cv: ParsedCv): string | null {
   return null;
 }
 
-export async function suggestHeadline(cv: ParsedCv): Promise<{ text: string | null; usedAi: boolean }> {
+export async function suggestHeadline(
+  cv: ParsedCv
+): Promise<{ text: string | null; usedAi: boolean; aiError?: string }> {
   if (isAiEnabled()) {
     try {
       const text = await suggestHeadlineWithAi(cv);
       if (text) return { text, usedAi: true };
     } catch (err) {
+      const aiError = describeAiError(err);
       console.error("Suggestion d'accroche IA impossible, repli sur le mode template:", err);
+      return { text: suggestHeadlineWithTemplate(cv), usedAi: false, aiError };
     }
   }
   return { text: suggestHeadlineWithTemplate(cv), usedAi: false };
@@ -394,13 +422,15 @@ export function generateApplicationMessageWithTemplate(input: ApplicationMessage
 
 export async function generateApplicationMessage(
   input: ApplicationMessageInput
-): Promise<{ text: string; usedAi: boolean }> {
+): Promise<{ text: string; usedAi: boolean; aiError?: string }> {
   if (isAiEnabled()) {
     try {
       const text = await generateApplicationMessageWithAi(input);
       if (text) return { text, usedAi: true };
     } catch (err) {
+      const aiError = describeAiError(err);
       console.error("Generation du message de candidature IA impossible, repli sur le mode template:", err);
+      return { text: generateApplicationMessageWithTemplate(input), usedAi: false, aiError };
     }
   }
   return { text: generateApplicationMessageWithTemplate(input), usedAi: false };
@@ -656,13 +686,17 @@ ${cv.rawText}
   return { overall, categories, findings };
 }
 
-export async function scoreCv(input: ScoreCvInput): Promise<{ score: CvScore; usedAi: boolean }> {
+export async function scoreCv(
+  input: ScoreCvInput
+): Promise<{ score: CvScore; usedAi: boolean; aiError?: string }> {
   if (isAiEnabled()) {
     try {
       const score = await scoreCvWithAi(input);
       return { score, usedAi: true };
     } catch (err) {
+      const aiError = describeAiError(err);
       console.error("Notation IA du CV impossible, repli sur le mode heuristique:", err);
+      return { score: scoreCvWithHeuristics(input), usedAi: false, aiError };
     }
   }
   return { score: scoreCvWithHeuristics(input), usedAi: false };

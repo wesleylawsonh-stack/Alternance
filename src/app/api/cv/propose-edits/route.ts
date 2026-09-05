@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
     sections: asObject(profile.cvSections, EMPTY_SECTIONS),
   };
 
-  const { proposals, usedAi } = await proposeCvEdits({
+  const { proposals, usedAi, aiError } = await proposeCvEdits({
     cv,
     currentHeadline: profile.headline,
     offer: offer ? { title: offer.title, company: offer.company, description: offer.description } : null,
@@ -37,6 +37,7 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({
     proposals,
     usedAi,
+    aiError,
     cv: { headline: profile.headline, summary: cv.sections.summary, skills: cv.skills, experiences: cv.sections.experiences },
     offer: offer ? { id: offer.id, title: offer.title, company: offer.company, url: offer.url } : null,
   });

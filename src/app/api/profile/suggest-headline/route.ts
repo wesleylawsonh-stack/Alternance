@@ -28,5 +28,5 @@ export async function POST() {
     );
   }
 
-  return NextResponse.json({ suggestedHeadline: suggestion.text, usedAi: suggestion.usedAi });
+  return NextResponse.json({ suggestedHeadline: suggestion.text, usedAi: suggestion.usedAi, aiError: suggestion.aiError });
 }

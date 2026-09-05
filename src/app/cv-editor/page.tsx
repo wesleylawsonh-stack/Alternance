@@ -52,9 +52,11 @@ function CvEditorContent() {
 
   const [score, setScore] = useState<CvScore | null>(null);
   const [scoreUsedAi, setScoreUsedAi] = useState(false);
+  const [scoreAiError, setScoreAiError] = useState<string | null>(null);
 
   const [proposals, setProposals] = useState<Proposal[]>([]);
   const [usedAi, setUsedAi] = useState(false);
+  const [aiError, setAiError] = useState<string | null>(null);
   const [offerInfo, setOfferInfo] = useState<{ id: string; title: string; company: string | null; url: string | null } | null>(
     null
   );
@@ -66,6 +68,7 @@ function CvEditorContent() {
   const [applicationMessage, setApplicationMessage] = useState<string | null>(null);
   const [messageLoading, setMessageLoading] = useState(false);
   const [messageUsedAi, setMessageUsedAi] = useState(false);
+  const [messageAiError, setMessageAiError] = useState<string | null>(null);
   const [applied, setApplied] = useState(false);
 
   useEffect(() => {
@@ -86,6 +89,7 @@ function CvEditorContent() {
         if (!r.ok) throw new Error(data.error || "Erreur lors de l'analyse du CV.");
         setScore(data.score);
         setScoreUsedAi(data.usedAi);
+        setScoreAiError(data.aiError ?? null);
       })
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
@@ -104,6 +108,7 @@ function CvEditorContent() {
         if (!r.ok) throw new Error(data.error || "Erreur lors de l'analyse du CV.");
         setProposals(data.proposals);
         setUsedAi(data.usedAi);
+        setAiError(data.aiError ?? null);
         setOfferInfo(data.offer);
         const initialDecisions: Record<string, Decision> = {};
         for (const p of data.proposals as Proposal[]) {
@@ -149,6 +154,7 @@ function CvEditorContent() {
           if (msgRes.ok) {
             setApplicationMessage(msgData.message);
             setMessageUsedAi(msgData.usedAi);
+            setMessageAiError(msgData.aiError ?? null);
           }
         } catch {
           // Le message de candidature est un bonus : une erreur ici ne doit
@@ -204,7 +210,13 @@ function CvEditorContent() {
               <p className="text-sm text-slate-500">Generation du message...</p>
             ) : applicationMessage !== null ? (
               <>
-                {!messageUsedAi && (
+                {!messageUsedAi && messageAiError && (
+                  <p className="text-xs text-red-700 bg-red-50 rounded-lg p-2">
+                    L&apos;appel a l&apos;IA a echoue, message compose a partir d&apos;un modele simple a la place.
+                    Erreur : {messageAiError}
+                  </p>
+                )}
+                {!messageUsedAi && !messageAiError && (
                   <p className="text-xs text-amber-800 bg-amber-50 rounded-lg p-2">
                     Aucune cle IA configuree : message compose a partir d&apos;un modele simple.
                   </p>
@@ -254,7 +266,13 @@ function CvEditorContent() {
 
         {error && <p className="card p-4 text-sm text-red-600">{error}</p>}
 
-        {!scoreUsedAi && (
+        {!scoreUsedAi && scoreAiError && (
+          <p className="card p-4 text-sm text-red-700 bg-red-50">
+            L&apos;appel a l&apos;IA a echoue, analyse basee sur des criteres objectifs simples a la place. Erreur :{" "}
+            {scoreAiError}
+          </p>
+        )}
+        {!scoreUsedAi && !scoreAiError && (
           <p className="card p-4 text-sm text-amber-800 bg-amber-50">
             Aucune cle IA configuree (ANTHROPIC_API_KEY) : l&apos;analyse ci-dessous est basee sur des criteres
             objectifs simples (verbes d&apos;action, chiffres, sections presentes...). Connecte une cle IA pour une
@@ -319,7 +337,13 @@ function CvEditorContent() {
 
       {error && <p className="card p-4 text-sm text-red-600">{error}</p>}
 
-      {!usedAi && (
+      {!usedAi && aiError && (
+        <p className="card p-4 text-sm text-red-700 bg-red-50">
+          L&apos;appel a l&apos;IA a echoue, seul le reordonnancement des competences est propose a la place. Erreur :{" "}
+          {aiError}
+        </p>
+      )}
+      {!usedAi && !aiError && (
         <p className="card p-4 text-sm text-amber-800 bg-amber-50">
           Aucune cle IA configuree (ANTHROPIC_API_KEY) : seul le reordonnancement des competences en lien avec
           l&apos;offre est propose automatiquement. Connecte une cle IA pour des reformulations d&apos;accroche et

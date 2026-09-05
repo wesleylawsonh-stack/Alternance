@@ -33,7 +33,7 @@ export async function POST(req: NextRequest) {
   };
   const matchedSkills = asStringArray(offer.matchedSkills);
 
-  const { text, usedAi } = await generateApplicationMessage({
+  const { text, usedAi, aiError } = await generateApplicationMessage({
     cv,
     headline: profile.headline,
     fullName: profile.fullName,
@@ -41,5 +41,5 @@ export async function POST(req: NextRequest) {
     matchedSkills,
   });
 
-  return NextResponse.json({ message: text, usedAi });
+  return NextResponse.json({ message: text, usedAi, aiError });
 }

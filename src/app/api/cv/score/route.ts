@@ -22,11 +22,11 @@ export async function POST() {
     sections: asObject(profile.cvSections, EMPTY_SECTIONS),
   };
 
-  const { score, usedAi } = await scoreCv({
+  const { score, usedAi, aiError } = await scoreCv({
     cv,
     currentHeadline: profile.headline,
     targetJobTitles: asStringArray(criteria?.jobTitles),
   });
 
-  return NextResponse.json({ score, usedAi });
+  return NextResponse.json({ score, usedAi, aiError });
 }
