@@ -1,2 +1,0 @@
-# Alternance
-Site alternance automatisée
