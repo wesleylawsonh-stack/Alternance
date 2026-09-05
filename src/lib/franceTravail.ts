@@ -22,9 +22,11 @@ export type ExternalOffer = {
   postedAt: string | null;
 };
 
-const TOKEN_URL =
-  "https://entreprise.pole-emploi.fr/connexion/oauth2/access_token?realm=%2Fpartenaire";
-const SEARCH_URL = "https://api.pole-emploi.io/partenaire/offresdemploi/v2/offres/search";
+// Domaines migres de pole-emploi.{io,fr} vers francetravail.{io,fr} suite au
+// changement de marque. L'ancien domaine entreprise.pole-emploi.fr refuse
+// desormais les connexions (verifie en prod, ECONNREFUSED).
+const TOKEN_URL = "https://francetravail.io/connexion/oauth2/access_token?realm=%2Fpartenaire";
+const SEARCH_URL = "https://api.francetravail.io/partenaire/offresdemploi/v2/offres/search";
 
 const CONTRACT_TYPE_MAP: Record<string, string> = {
   alternance: "E2", // Contrat d'apprentissage / de professionnalisation (regroupes cote UI)
