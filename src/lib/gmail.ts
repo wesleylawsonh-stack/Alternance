@@ -1,4 +1,8 @@
-import { google } from "googleapis";
+// On importe uniquement le client Gmail (pas le paquet "googleapis" complet,
+// qui embarque ~300 API Google et fait exploser la taille des fonctions
+// serverless au deploiement). Le client OAuth2 vient du meme paquet pour
+// eviter tout conflit de types entre deux copies de google-auth-library.
+import { gmail as gmailClient, auth } from "@googleapis/gmail";
 import { prisma } from "./db";
 
 const SCOPES = ["https://www.googleapis.com/auth/gmail.readonly"];
@@ -8,7 +12,7 @@ export function isGmailConfigured(): boolean {
 }
 
 function createOAuthClient() {
-  return new google.auth.OAuth2(
+  return new auth.OAuth2(
     process.env.GOOGLE_CLIENT_ID,
     process.env.GOOGLE_CLIENT_SECRET,
     process.env.GOOGLE_REDIRECT_URI
@@ -36,7 +40,7 @@ export async function exchangeCodeAndStoreAccount(code: string): Promise<{ email
 
   client.setCredentials(tokens);
 
-  const gmail = google.gmail({ version: "v1", auth: client });
+  const gmail = gmailClient({ version: "v1", auth: client });
   const profile = await gmail.users.getProfile({ userId: "me" });
   const email = profile.data.emailAddress ?? null;
 
@@ -151,7 +155,7 @@ export async function fetchRecentGmailMessages(
   maxResults = 30
 ): Promise<GmailMessage[]> {
   if (!client) return [];
-  const gmail = google.gmail({ version: "v1", auth: client });
+  const gmail = gmailClient({ version: "v1", auth: client });
 
   const afterEpochSeconds = Math.floor(afterDate.getTime() / 1000);
   const list = await gmail.users.messages.list({

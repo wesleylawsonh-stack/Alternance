@@ -25,21 +25,44 @@ d'emploi/alternance :
 
 ## Stack technique
 
-Next.js (App Router, TypeScript) + Tailwind CSS + Prisma/SQLite (base de
-données locale, un seul fichier `data/dev.db`).
+Next.js (App Router, TypeScript) + Tailwind CSS + Prisma/PostgreSQL.
+
+## Base de données
+
+Le site utilise PostgreSQL (necessaire pour persister les donnees une fois
+deploye — Vercel et la plupart des hebergeurs serverless n'ont pas de disque
+persistant, donc une base SQLite en fichier local ne survivrait pas aux
+redeploiements).
+
+**En local**, le plus simple est une base PostgreSQL locale (via
+[Postgres.app](https://postgresapp.com/), `apt install postgresql`, ou
+Docker : `docker run -d -p 5432:5432 -e POSTGRES_PASSWORD=postgres postgres`).
+
+**Pour deployer** (ex: sur Vercel), utilise une base PostgreSQL hebergee.
+[Neon](https://neon.tech) a un plan gratuit largement suffisant pour un usage
+personnel et s'integre directement a Vercel (bouton "Add Integration" ->
+Neon, dans les parametres du projet Vercel : ca cree la base et remplit
+automatiquement `DATABASE_URL`). Alternatives : Supabase, Railway.
+
+Dans les deux cas, renseigne l'URL de connexion dans `.env` :
+
+```
+DATABASE_URL="postgresql://user:password@host:5432/dbname"
+```
 
 ## Démarrage local
 
 ```bash
 npm install
-npx prisma migrate deploy   # cree la base SQLite locale (data/dev.db)
+npx prisma migrate deploy   # cree les tables dans la base PostgreSQL
 npm run dev
 ```
 
 Le site est disponible sur http://localhost:3000.
 
-Aucune clé n'est necessaire pour commencer : tu peux tout de suite importer
-ton CV, definir tes criteres, et ajouter des offres manuellement. Le score de
+Aucune clé IA/API n'est necessaire pour commencer (seule une base PostgreSQL
+est requise, voir ci-dessus) : tu peux tout de suite importer ton CV,
+definir tes criteres, et ajouter des offres manuellement. Le score de
 matching et l'adaptation de CV fonctionnent des le depart grace a un moteur
 par mots-cles/competences (sans IA).
 
@@ -135,12 +158,9 @@ continu quelque part et qu'une tache planifiee appelle
   d'environnement `CRON_SECRET` (n'importe quelle chaine aleatoire) dans les
   parametres du projet Vercel — Vercel l'enverra automatiquement en
   en-tete `Authorization: Bearer <CRON_SECRET>` a chaque declenchement.
-  **Attention** : Vercel ne fournit pas de disque persistant, donc la base
-  SQLite actuelle (`data/dev.db`) ne survivrait pas aux redeploiements —
-  il faudrait migrer vers une base hebergee (Postgres via Neon/Supabase,
-  Turso, etc.) avant de deployer sur Vercel. Ce n'est pas fait dans ce depot.
-- **Serveur/VPS avec disque persistant** (recommande avec la configuration
-  SQLite actuelle) : deploie le site (`npm run build && npm start`) et
+  (La base PostgreSQL hebergee, voir "Base de donnees" plus haut, persiste
+  normalement entre les redeploiements Vercel.)
+- **Serveur/VPS** : deploie le site (`npm run build && npm start`) et
   ajoute une tache cron systeme, ex :
   ```
   0 * * * * curl -X POST https://ton-domaine/api/gmail/sync -H "Authorization: Bearer $CRON_SECRET"
@@ -176,10 +196,15 @@ src/app/
 
 ## Notes
 
-- Base de donnees SQLite en fichier local (`data/dev.db`), ignoree par git.
+- Base de donnees PostgreSQL (locale ou hebergee) — voir "Base de donnees".
+  Aucun fichier de base n'est commite dans le depot.
 - Application mono-utilisateur : aucune authentification.
 - Le dictionnaire de competences (`src/lib/skills.ts`) peut etre complete
   facilement pour ameliorer la detection selon ton domaine.
-- Le refresh token Gmail est stocke en clair dans la base SQLite locale
-  (usage personnel, base non partagee). Si tu deploies le site publiquement,
+- Le refresh token Gmail est stocke en clair dans la base de donnees (usage
+  personnel, base non partagee). Si tu deploies le site publiquement,
   protege l'acces a la base de donnees en consequence.
+- L'integration Gmail utilise `@googleapis/gmail` (client cible, ~1 Mo) et
+  non le paquet `googleapis` complet (qui embarque ~300 API Google pour
+  ~200 Mo et fait echouer le deploiement des fonctions serverless Vercel en
+  depassant la limite de taille).

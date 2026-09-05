@@ -13,9 +13,9 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.32.1",
+    "@googleapis/gmail": "^18.0.0",
     "@prisma/client": "^5.22.0",
     "exceljs": "^4.4.0",
-    "googleapis": "^178.0.0",
     "next": "15.5.25",
     "pdf-lib": "^1.17.1",
     "react": "19.0.0",
