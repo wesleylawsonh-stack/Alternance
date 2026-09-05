@@ -28,6 +28,7 @@ const SOURCE_LABELS: Record<string, string> = {
   manual: "Ajout manuel",
   france_travail: "France Travail",
   adzuna: "Adzuna",
+  lba: "La bonne alternance",
 };
 
 const DATE_OPTIONS = [

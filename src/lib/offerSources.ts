@@ -6,6 +6,7 @@
 
 import { fetchFranceTravailOffers, isFranceTravailConfigured, type ExternalOffer } from "./franceTravail";
 import { fetchAdzunaOffers, isAdzunaConfigured } from "./adzuna";
+import { fetchLbaOffers, isLbaConfigured } from "./labonnealternance";
 
 export type { ExternalOffer };
 
@@ -13,16 +14,18 @@ export type OfferSourceCriteria = {
   jobTitles: string[];
   locations: string[];
   contractTypes: string[];
+  radiusKm: number | null;
 };
 
 export function isAnySourceConfigured(): boolean {
-  return isFranceTravailConfigured() || isAdzunaConfigured();
+  return isFranceTravailConfigured() || isAdzunaConfigured() || isLbaConfigured();
 }
 
 export function configuredSourceNames(): string[] {
   const names: string[] = [];
   if (isFranceTravailConfigured()) names.push("france_travail");
   if (isAdzunaConfigured()) names.push("adzuna");
+  if (isLbaConfigured()) names.push("lba");
   return names;
 }
 
@@ -57,6 +60,18 @@ export async function fetchAllExternalOffers(
         .catch((err) => {
           console.error("Erreur source Adzuna:", err);
           sourceErrors.push(`Adzuna: ${err instanceof Error ? err.message : String(err)}`);
+          return [];
+        })
+    );
+  }
+
+  if (isLbaConfigured()) {
+    tasks.push(
+      fetchLbaOffers(criteria)
+        .then((offers) => offers.map((o) => ({ ...o, source: "lba" })))
+        .catch((err) => {
+          console.error("Erreur source La bonne alternance:", err);
+          sourceErrors.push(`La bonne alternance: ${err instanceof Error ? err.message : String(err)}`);
           return [];
         })
     );

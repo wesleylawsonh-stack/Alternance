@@ -157,7 +157,15 @@ Avec cette cle : Claude reformule/reordonne le CV en respectant une regle
 stricte de non-invention (le prompt interdit explicitement d'ajouter une
 competence, experience ou donnee absente du CV source).
 
-### 2. Recuperation automatique d'offres (API France Travail)
+### 2. Recuperation automatique d'offres (sources multiples)
+
+Chaque source ci-dessous est independante et optionnelle : active-en une ou
+plusieurs (les doublons entre sources sont detectes automatiquement via
+URL / identifiant externe / empreinte de contenu). Sans aucune source
+configuree, le bouton "Recuperer des offres" affiche un message explicatif
+et l'ajout manuel d'offres reste disponible.
+
+**France Travail** (offres officielles Pole Emploi) :
 
 1. Cree un compte et une application sur https://francetravail.io
    (produit "Offres d'emploi v2").
@@ -169,8 +177,31 @@ FRANCE_TRAVAIL_CLIENT_ID=...
 FRANCE_TRAVAIL_CLIENT_SECRET=...
 ```
 
-Sans ces cles, le bouton "Recuperer des offres" affiche un message
-explicatif et l'ajout manuel d'offres reste disponible.
+**Adzuna** (agregateur d'offres, cle gratuite) :
+
+1. Cree un compte sur https://developer.adzuna.com et recupere ton
+   `app_id`/`app_key`.
+2. Renseigne-les dans `.env` :
+
+```
+ADZUNA_APP_ID=...
+ADZUNA_APP_KEY=...
+```
+
+**La bonne alternance** (API gouvernementale gratuite, specifique
+alternance/apprentissage, usage non commercial uniquement) :
+
+```
+LBA_ENABLED=true
+```
+
+⚠️ Cette source a ete integree en s'appuyant sur la documentation publique
+disponible (endpoint et parametres non verifiables directement lors de
+l'ecriture de l'adaptateur — voir le commentaire en tete de
+`src/lib/labonnealternance.ts`). Elle peut necessiter un ajustement une
+fois testee en conditions reelles ; en cas d'erreur, le message affiche sur
+la page Offres contient un extrait de la reponse brute de l'API pour
+faciliter le diagnostic.
 
 ### 3. Synchronisation Gmail (detection automatique des reponses)
 
@@ -284,6 +315,10 @@ src/lib/
   ai.ts                      Propositions d'edition de CV + classification d'emails (IA ou fallback)
   cvVersion.ts                Application des decisions accepter/modifier/refuser + nommage des versions
   franceTravail.ts           Adaptateur API France Travail
+  adzuna.ts                   Adaptateur API Adzuna
+  labonnealternance.ts        Adaptateur API La bonne alternance
+  offerSources.ts              Point d'entree regroupant les sources d'offres
+  geocode.ts                   Geocodage (API Adresse) pour distance/rayon
   gmail.ts                   Client OAuth Gmail + lecture des messages
   emailMatcher.ts             Association email <-> offre + classification du statut
   gmailSync.ts                Orchestration de la synchronisation Gmail

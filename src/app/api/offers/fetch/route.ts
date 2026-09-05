@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(
       {
         error:
-          "Aucune source de recuperation automatique n'est configuree. Ajoute FRANCE_TRAVAIL_CLIENT_ID/SECRET et/ou ADZUNA_APP_ID/KEY dans .env (voir README), ou ajoute des offres manuellement.",
+          "Aucune source de recuperation automatique n'est configuree. Ajoute FRANCE_TRAVAIL_CLIENT_ID/SECRET, ADZUNA_APP_ID/KEY et/ou LBA_ENABLED dans .env (voir README), ou ajoute des offres manuellement.",
       },
       { status: 400 }
     );
@@ -66,7 +66,12 @@ export async function POST(req: NextRequest) {
   // republiee avec un nouvel identifiant externe) : on compare l'identifiant
   // externe, l'URL, ET une empreinte de contenu (titre+entreprise+description
   // normalises), en plus du titre+entreprise exact.
-  const { offers: externalOffers, sourceErrors } = await fetchAllExternalOffers({ jobTitles, locations, contractTypes });
+  const { offers: externalOffers, sourceErrors } = await fetchAllExternalOffers({
+    jobTitles,
+    locations,
+    contractTypes,
+    radiusKm: criteria?.radiusKm ?? null,
+  });
 
   const cvSkills = asStringArray(profile?.cvSkills);
   const cvEducationText = asObject(profile?.cvSections, EMPTY_SECTIONS).education.join(" ");
