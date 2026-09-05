@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import SearchProfileChat from "@/components/SearchProfileChat";
 
 type Criteria = {
   jobTitles: string[];
@@ -117,6 +118,11 @@ export default function CriteriaPage() {
             Utilise en complement des criteres ci-dessous pour affiner le score de matching et donner du contexte
             a l&apos;IA lors de l&apos;adaptation de ton CV a une offre.
           </p>
+          <div className="mt-3">
+            <SearchProfileChat
+              onFinalized={(searchDescription) => setCriteria((c) => ({ ...c, searchDescription }))}
+            />
+          </div>
         </div>
 
         <div>

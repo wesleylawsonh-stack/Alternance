@@ -21,6 +21,17 @@ d'emploi/alternance :
   (ex: "Alternance" reconnaît aussi "Contrat d'apprentissage"/"Contrat de
   professionnalisation", les libellés réels utilisés par les sources
   d'offres) plutôt qu'une simple sous-chaîne exacte.
+- **Discussion avec l'IA** (bouton "Discuter avec l'IA pour préciser ma
+  recherche", page Critères) : une conversation guidée par Claude qui pose
+  des questions une par une (métier visé, secteur, localisation, parcours
+  scolaire, formation préparée, expériences...) sans jamais reposer une
+  question déjà répondue via le CV ou les critères déjà enregistrés. En
+  cliquant sur "Terminer la discussion", la conversation est résumée en une
+  description de recherche enrichie (enregistrée automatiquement) et les
+  faits nouveaux sur la formation sont ajoutés à la section "formation" du
+  profil (jamais d'écrasement, uniquement des ajouts). Nécessite
+  `ANTHROPIC_API_KEY` (pas de repli sans IA pour cette fonctionnalité — un
+  faux chatbot sans IA n'aiderait pas).
 - **Offres** : ajout manuel ou récupération automatique depuis plusieurs
   **sources légales à API officielle** (France Travail, Adzuna — jamais de
   scraping de LinkedIn/Indeed/Welcome to the Jungle, contraire à leurs

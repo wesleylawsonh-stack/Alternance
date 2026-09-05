@@ -718,3 +718,168 @@ export async function scoreCv(
   }
   return { score: scoreCvWithHeuristics(input), usedAi: false };
 }
+
+// --- Discussion interactive pour preciser le profil de recherche ---
+// Contrairement aux fonctions ci-dessus, cette fonctionnalite n'a pas de
+// repli heuristique sensible (un "faux" chatbot sans IA n'aiderait pas) :
+// elle est simplement indisponible sans cle Anthropic configuree.
+
+export type ChatMessage = { role: "user" | "assistant"; content: string };
+
+export type SearchChatContext = {
+  existingSearchDescription: string | null;
+  jobTitles: string[];
+  locations: string[];
+  cvEducation: string[];
+  cvSkills: string[];
+};
+
+function buildSearchChatSystemPrompt(context: SearchChatContext): string {
+  return `Tu es un assistant qui aide un candidat a l'alternance/apprentissage a
+preciser ce qu'il recherche, afin d'ameliorer le matching d'offres et
+l'adaptation de son CV. Tu menes une conversation naturelle et chaleureuse,
+en francais, en posant UNE SEULE question a la fois (jamais plusieurs
+questions dans le meme message), courte (1 a 3 phrases).
+
+Sujets a explorer, dans un ordre naturel, sans jamais reposer une question
+sur ce qui est deja connu (voir contexte ci-dessous) : le metier/domaine
+recherche, le type d'entreprise ou secteur souhaite, la localisation et la
+mobilite, le rythme d'alternance s'il le connait deja, son parcours
+scolaire actuel (niveau d'etudes, filiere, etablissement), la
+formation/le diplome qu'il prepare ou vise, ses experiences deja faites
+(stages, jobs, projets), et ses eventuelles contraintes personnelles.
+
+REGLE ABSOLUE : ne jamais affirmer ou supposer une information que le
+candidat n'a pas donnee lui-meme dans la conversation. Tu peux reformuler
+ou reprendre ce qu'il dit, jamais inventer.
+
+Quand tu estimes avoir assez d'informations (generalement apres 5 a 8
+echanges), dis-le explicitement et invite le candidat a cliquer sur
+"Terminer la discussion" quand il le souhaite (sans l'y forcer : il peut
+continuer a preciser s'il le souhaite).
+
+CONTEXTE DEJA CONNU (ne repose jamais une question sur ce qui est deja
+present ici) :
+- Description de recherche deja enregistree : ${context.existingSearchDescription || "(aucune)"}
+- Intitules de poste deja enregistres : ${context.jobTitles.join(", ") || "(aucun)"}
+- Localisations deja enregistrees : ${context.locations.join(", ") || "(aucune)"}
+- Formation deja detectee dans le CV : ${context.cvEducation.join(" ; ") || "(aucune)"}
+- Competences deja detectees dans le CV : ${context.cvSkills.join(", ") || "(aucune)"}
+
+Si c'est le tout debut de la conversation (aucun message precedent), lance
+la discussion avec une premiere question adaptee a ce contexte (par
+exemple, si la formation est deja connue via le CV, ne redemande pas le
+niveau d'etudes mais confirme/precise plutot ce qui manque).`;
+}
+
+export async function chatAboutSearchProfileWithAi(
+  messages: ChatMessage[],
+  context: SearchChatContext
+): Promise<string> {
+  const anthropic = getClient();
+
+  const apiMessages =
+    messages.length > 0
+      ? messages
+      : [{ role: "user" as const, content: "(Debut de la conversation, pose ta premiere question.)" }];
+
+  const message = await anthropic.messages.create({
+    model: process.env.ANTHROPIC_MODEL || "claude-sonnet-5",
+    max_tokens: 300,
+    thinking: { type: "disabled" },
+    system: buildSearchChatSystemPrompt(context),
+    messages: apiMessages,
+  } as Anthropic.MessageCreateParamsNonStreaming);
+
+  const textBlock = message.content.find((b) => b.type === "text");
+  if (!textBlock || textBlock.type !== "text") throw new Error("Reponse IA vide");
+  return textBlock.text.trim();
+}
+
+export async function chatSearchProfileTurn(messages: ChatMessage[], context: SearchChatContext): Promise<string> {
+  if (!isAiEnabled()) {
+    throw new Error("Cette fonctionnalite necessite une cle API Anthropic configuree (ANTHROPIC_API_KEY).");
+  }
+  try {
+    return await chatAboutSearchProfileWithAi(messages, context);
+  } catch (err) {
+    throw new Error(describeAiError(err));
+  }
+}
+
+const FINALIZE_SEARCH_CHAT_SYSTEM_PROMPT = `Tu resumes une conversation entre un assistant et un candidat a
+l'alternance/apprentissage, dans le but de produire deux choses :
+1. Un paragraphe "searchDescription", en francais, qui synthetise
+   clairement ce que le candidat recherche (metier, secteur, localisation,
+   rythme, type d'entreprise, contraintes) ET son parcours/sa formation,
+   pour servir de contexte au matching d'offres et a l'adaptation de CV.
+2. Une liste "educationAdditions" de faits NOUVEAUX sur son parcours
+   scolaire/formation mentionnes dans la conversation, qui ne figurent PAS
+   deja dans la formation deja connue (fournie ci-dessous). Chaque element
+   est une ligne courte, style CV (ex: "Etudiant en BUT Informatique, IUT
+   de Lyon (2024-2026)"). Liste vide si rien de nouveau a ajouter.
+
+REGLE ABSOLUE : n'utilise QUE des informations effectivement mentionnees
+par le candidat (messages "Candidat") dans la conversation fournie.
+N'invente rien, ne suppose rien.
+
+Reponds UNIQUEMENT avec un objet JSON de la forme :
+{"searchDescription": "...", "educationAdditions": ["...", ...]}`;
+
+export async function finalizeSearchProfileWithAi(
+  messages: ChatMessage[],
+  context: SearchChatContext
+): Promise<{ searchDescription: string; educationAdditions: string[] }> {
+  const anthropic = getClient();
+
+  const transcript = messages.map((m) => `${m.role === "user" ? "Candidat" : "Assistant"} : ${m.content}`).join("\n");
+
+  const userPrompt = `Formation deja connue (CV) : ${context.cvEducation.join(" ; ") || "(aucune)"}
+Description de recherche deja enregistree : ${context.existingSearchDescription || "(aucune)"}
+
+Conversation :
+"""
+${transcript}
+"""`;
+
+  const message = await anthropic.messages.create({
+    model: process.env.ANTHROPIC_MODEL || "claude-sonnet-5",
+    max_tokens: 800,
+    thinking: { type: "disabled" },
+    system: FINALIZE_SEARCH_CHAT_SYSTEM_PROMPT,
+    messages: [{ role: "user", content: userPrompt }],
+  } as Anthropic.MessageCreateParamsNonStreaming);
+
+  const textBlock = message.content.find((b) => b.type === "text");
+  if (!textBlock || textBlock.type !== "text") throw new Error("Reponse IA vide");
+
+  const jsonMatch = textBlock.text.match(/\{[\s\S]*\}/);
+  if (!jsonMatch) throw new Error("Reponse IA non structuree (JSON attendu)");
+  const parsed = JSON.parse(jsonMatch[0]) as { searchDescription?: string; educationAdditions?: string[] };
+
+  const searchDescription = typeof parsed.searchDescription === "string" ? parsed.searchDescription.trim() : "";
+  const educationAdditions = Array.isArray(parsed.educationAdditions)
+    ? parsed.educationAdditions.filter((s): s is string => typeof s === "string" && s.trim().length > 0).map((s) => s.trim())
+    : [];
+
+  if (!searchDescription) throw new Error("Reponse IA sans description de recherche");
+
+  return { searchDescription, educationAdditions };
+}
+
+export async function finalizeSearchProfile(
+  messages: ChatMessage[],
+  context: SearchChatContext
+): Promise<{ searchDescription: string; educationAdditions: string[] }> {
+  if (!isAiEnabled()) {
+    throw new Error("Cette fonctionnalite necessite une cle API Anthropic configuree (ANTHROPIC_API_KEY).");
+  }
+  if (messages.length === 0) {
+    throw new Error("La conversation est vide.");
+  }
+  try {
+    return await finalizeSearchProfileWithAi(messages, context);
+  } catch (err) {
+    throw new Error(describeAiError(err));
+  }
+}
