@@ -39,6 +39,31 @@ export function isFranceTravailConfigured(): boolean {
   return Boolean(process.env.FRANCE_TRAVAIL_CLIENT_ID && process.env.FRANCE_TRAVAIL_CLIENT_SECRET);
 }
 
+// Une erreur reseau (DNS, timeout, connexion refusee/reinitialisee) fait
+// echouer fetch() lui-meme avec un message generique ("fetch failed") qui ne
+// dit pas grand-chose : le detail utile est dans err.cause. On l'inclut pour
+// que les erreurs remontees a l'utilisateur soient exploitables.
+function describeNetworkError(err: unknown): string {
+  if (err instanceof Error) {
+    const cause = (err as { cause?: unknown }).cause;
+    if (cause instanceof Error) return `${err.message} (${cause.message})`;
+    return err.message;
+  }
+  return String(err);
+}
+
+async function fetchWithTimeout(url: string, init: RequestInit, timeoutMs = 10000): Promise<Response> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, { ...init, signal: controller.signal });
+  } catch (err) {
+    throw new Error(`Requete reseau vers France Travail echouee : ${describeNetworkError(err)}`);
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 async function getAccessToken(): Promise<string> {
   const clientId = process.env.FRANCE_TRAVAIL_CLIENT_ID!;
   const clientSecret = process.env.FRANCE_TRAVAIL_CLIENT_SECRET!;
@@ -50,7 +75,7 @@ async function getAccessToken(): Promise<string> {
     scope: "api_offresdemploiv2 o2dsoffre",
   });
 
-  const res = await fetch(TOKEN_URL, {
+  const res = await fetchWithTimeout(TOKEN_URL, {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body,
@@ -89,7 +114,7 @@ export async function fetchFranceTravailOffers(
   params.set("range", `0-${Math.max(0, limit - 1)}`);
   params.set("sort", "1"); // tri par date de creation decroissante
 
-  const res = await fetch(`${SEARCH_URL}?${params.toString()}`, {
+  const res = await fetchWithTimeout(`${SEARCH_URL}?${params.toString()}`, {
     headers: { Authorization: `Bearer ${token}` },
   });
 
