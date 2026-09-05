@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import PhotoCropModal from "@/components/PhotoCropModal";
 
 type Profile = {
   fullName: string | null;
@@ -11,6 +12,7 @@ type Profile = {
   headline: string | null;
   summary: string | null;
   linkedin: string | null;
+  photoUrl: string | null;
   cvFileName: string | null;
   cvSkills: unknown;
 };
@@ -23,6 +25,7 @@ const EMPTY: Profile = {
   headline: "",
   summary: "",
   linkedin: "",
+  photoUrl: null,
   cvFileName: null,
   cvSkills: [],
 };
@@ -38,6 +41,10 @@ export default function ProfilePage() {
   const [suggestingHeadline, setSuggestingHeadline] = useState(false);
   const [headlineError, setHeadlineError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const photoInputRef = useRef<HTMLInputElement>(null);
+  const [pendingPhoto, setPendingPhoto] = useState<File | null>(null);
+  const [photoSaving, setPhotoSaving] = useState(false);
+  const [photoError, setPhotoError] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("/api/profile")
@@ -105,6 +112,44 @@ export default function ProfilePage() {
     }
   }
 
+  function handlePhotoSelected(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (file) setPendingPhoto(file);
+    if (photoInputRef.current) photoInputRef.current.value = "";
+  }
+
+  async function handlePhotoConfirm(blob: Blob) {
+    setPendingPhoto(null);
+    setPhotoSaving(true);
+    setPhotoError(null);
+    try {
+      const formData = new FormData();
+      formData.append("file", blob, "avatar.png");
+      const res = await fetch("/api/profile/photo", { method: "POST", body: formData });
+      const data = await res.json();
+      if (!res.ok) {
+        setPhotoError(data.error || "Erreur lors de l'enregistrement de la photo.");
+      } else {
+        setProfile((p) => ({ ...p, photoUrl: data.profile.photoUrl }));
+      }
+    } catch {
+      setPhotoError("Erreur reseau.");
+    } finally {
+      setPhotoSaving(false);
+    }
+  }
+
+  async function handlePhotoDelete() {
+    setPhotoSaving(true);
+    setPhotoError(null);
+    try {
+      await fetch("/api/profile/photo", { method: "DELETE" });
+      setProfile((p) => ({ ...p, photoUrl: null }));
+    } finally {
+      setPhotoSaving(false);
+    }
+  }
+
   async function handleSuggestHeadline() {
     setSuggestingHeadline(true);
     setHeadlineError(null);
@@ -133,6 +178,43 @@ export default function ProfilePage() {
         <h1 className="text-2xl font-semibold text-slate-900">Profil</h1>
         <p className="text-slate-500 mt-1">Tes informations et ton CV, utilises pour calculer le matching et adapter tes candidatures.</p>
       </div>
+
+      <section className="card p-6">
+        <h2 className="text-lg font-medium mb-4">Photo de profil</h2>
+        <div className="flex items-center gap-4">
+          {profile.photoUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={profile.photoUrl} alt="" className="w-16 h-16 rounded-full object-cover border border-slate-200" />
+          ) : (
+            <div className="w-16 h-16 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center text-xl font-semibold">
+              {(profile.fullName || "?").slice(0, 1).toUpperCase()}
+            </div>
+          )}
+          <div className="flex flex-col gap-2">
+            <label className="btn-secondary cursor-pointer w-fit">
+              {photoSaving ? "Enregistrement..." : profile.photoUrl ? "Changer la photo" : "Importer une photo"}
+              <input
+                ref={photoInputRef}
+                type="file"
+                accept="image/png,image/jpeg,image/webp"
+                className="hidden"
+                onChange={handlePhotoSelected}
+                disabled={photoSaving}
+              />
+            </label>
+            {profile.photoUrl && (
+              <button type="button" className="text-xs text-red-600 hover:underline w-fit" onClick={handlePhotoDelete} disabled={photoSaving}>
+                Supprimer la photo
+              </button>
+            )}
+          </div>
+        </div>
+        {photoError && <p className="text-sm text-red-600 mt-3">{photoError}</p>}
+      </section>
+
+      {pendingPhoto && (
+        <PhotoCropModal file={pendingPhoto} onCancel={() => setPendingPhoto(null)} onConfirm={handlePhotoConfirm} />
+      )}
 
       <section className="card p-6">
         <h2 className="text-lg font-medium mb-4">CV (PDF)</h2>

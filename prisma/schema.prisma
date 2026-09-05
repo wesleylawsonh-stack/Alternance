@@ -17,6 +17,7 @@ model Profile {
   headline   String?
   summary    String?
   linkedin   String?
+  photoUrl   String? // photo de profil (Vercel Blob, URL a suffixe aleatoire non devinable), si configure
   cvFileName String?
   cvFileUrl  String? // fichier PDF original tel qu'importe (Vercel Blob), si configure
   cvRawText  String?

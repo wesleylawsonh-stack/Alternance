@@ -3,7 +3,13 @@
 Site personnel (usage individuel, pas de login) pour piloter une recherche
 d'emploi/alternance :
 
-- **Profil** : informations personnelles + import de CV au format PDF.
+- **Profil** : informations personnelles + import de CV au format PDF +
+  **photo de profil** (import, recadrage/zoom avant enregistrement,
+  remplacement, suppression), affichee dans l'en-tete du site et sur la
+  page Profil. Stockee via Vercel Blob (URL a suffixe aleatoire non
+  devinable, jamais en base Postgres directement) ; sans
+  `BLOB_READ_WRITE_TOKEN`, l'import de photo affiche un message clair
+  plutot que d'echouer silencieusement.
 - **CV** : le texte du PDF est extrait et analysé pour en tirer les
   compétences (dictionnaire de mots-clés) et les sections (profil,
   expériences, formation, langues).
