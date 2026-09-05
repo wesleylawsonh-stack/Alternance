@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "prisma generate && prisma migrate deploy && next build",
+    "build": "prisma generate && (prisma migrate deploy || (echo 'Migration echouee (cold-start Neon probable), nouvelle tentative dans 8s...' && sleep 8 && prisma migrate deploy)) && next build",
     "start": "next start",
     "lint": "next lint",
     "postinstall": "prisma generate",
