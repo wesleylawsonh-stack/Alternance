@@ -98,10 +98,15 @@ export default function ProfilePage() {
             ? ` Accroche suggeree automatiquement (modifiable ci-dessous).`
             : ` Une accroche a ete suggeree, clique sur "Suggerer une accroche" pour l'utiliser.`
           : "";
+        const cvParseNote = data.cvParseUsedAi
+          ? " CV analyse par IA."
+          : data.cvParseAiError
+            ? " Analyse IA du CV indisponible, decoupage automatique standard utilise."
+            : "";
         setUploadInfo(
           `CV importe : ${data.skillsFound.length} competence(s) detectee(s). ${
             data.updatedOffers ? `${data.updatedOffers} offre(s) recalculee(s).` : ""
-          }${headlineNote}`
+          }${headlineNote}${cvParseNote}`
         );
       }
     } catch {

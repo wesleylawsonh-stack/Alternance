@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { extractTextFromPdf } from "@/lib/pdfText";
-import { parseCvText } from "@/lib/cvParser";
 import { recomputeAllOfferScores } from "@/lib/recompute";
 import { toJsonString } from "@/lib/json";
 import { serializeProfile } from "@/lib/serialize";
-import { suggestHeadline } from "@/lib/ai";
+import { suggestHeadline, parseCv } from "@/lib/ai";
 import { uploadFile, deleteFile } from "@/lib/storage";
 
 export async function POST(req: NextRequest) {
@@ -46,7 +45,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const parsed = parseCvText(rawText);
+  const { parsed, usedAi: cvParseUsedAi, aiError: cvParseAiError } = await parseCv(rawText);
 
   const existingProfile = await prisma.profile.findUnique({ where: { id: "singleton" } });
   // Stocke le fichier original tel qu'importe (si un stockage Blob est
@@ -110,5 +109,7 @@ export async function POST(req: NextRequest) {
     updatedOffers,
     suggestedHeadline,
     headlineUsedAi,
+    cvParseUsedAi,
+    cvParseAiError,
   });
 }

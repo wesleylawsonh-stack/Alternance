@@ -1,5 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import type { ParsedCv } from "./cvParser";
+import { parseCvText } from "./cvParser";
+import { extractSkills } from "./skills";
 import { computeContentOverlap, significantWords } from "./matching";
 
 export function isAiEnabled(): boolean {
@@ -1008,4 +1010,118 @@ export async function checkMandatoryCriteria(
     }
   }
   return checkMandatoryCriteriaWithHeuristic(trimmed, offer);
+}
+
+// --- Decoupage du CV en sections par IA, en remplacement du decoupage
+// heuristique base sur des intitules de section attendus (voir cvParser.ts).
+// Un CV avec une mise en page inhabituelle (pas d'intitule "Experience",
+// sections dans un ordre atypique, CV en anglais, etc.) est mal decoupe par
+// l'heuristique, ce qui degrade tout ce qui en depend (score, suggestions,
+// matching). L'IA comprend le contenu independamment de la mise en forme.
+
+const CV_PARSE_SYSTEM_PROMPT = `Tu decoupes le texte brut d'un CV (extrait d'un PDF, la mise en page
+d'origine est donc perdue : sauts de ligne parfois au milieu d'une phrase,
+colonnes eventuellement melangees) en sections structurees.
+
+REGLE ABSOLUE : tu ne dois QUE recopier des extraits VERBATIM (mot pour
+mot, caracteres identiques) du texte fourni. Interdiction absolue de
+reformuler, resumer, traduire, corriger une faute, ajouter ou deduire une
+information. La seule transformation autorisee est de rejoindre en une
+seule ligne des mots coupes par un saut de ligne au milieu d'une meme
+phrase/puce (artefact d'extraction PDF), sans changer un seul mot.
+
+Sections a produire :
+- "summary" : le paragraphe de profil/accroche en debut de CV s'il existe
+  (chaine ou null si absent).
+- "experiences" : un element par experience professionnelle, stage,
+  alternance ou projet distinct (intitule + entreprise + dates + description
+  regroupes en une seule chaine par experience, dans l'ordre du CV).
+- "education" : un element par diplome/formation/etablissement distinct.
+- "languages" : un element par langue mentionnee (ex: "Anglais - courant"),
+  reprise telle quelle.
+
+Identifie les sections par leur CONTENU (ce dont ca parle) plutot que par
+un intitule attendu : un CV peut ne pas avoir d'intitule de section du tout,
+avoir des intitules en anglais, ou un ordre inhabituel.
+
+Reponds UNIQUEMENT avec un objet JSON de la forme :
+{"summary": "..."|null, "experiences": ["...", ...], "education": ["...", ...], "languages": ["...", ...]}
+Pas de texte ni de markdown autour. Liste vide si aucun element trouve pour
+une section (jamais null pour les listes, seul "summary" peut etre null).`;
+
+export function normalizeWhitespace(text: string): string {
+  return text.replace(/\s+/g, " ").trim();
+}
+
+/**
+ * Garde-fou anti-fabrication : un extrait n'est retenu que s'il figure
+ * effectivement, mot pour mot (aux espaces/sauts de ligne pres), dans le
+ * texte brut source. Toute reformulation ou invention de l'IA est ainsi
+ * rejetee plutot que silencieusement acceptee.
+ */
+export function isVerbatimExtract(candidate: string, normalizedSource: string): boolean {
+  const normalized = normalizeWhitespace(candidate);
+  return normalized.length > 0 && normalizedSource.includes(normalized);
+}
+
+export async function parseCvSectionsWithAi(rawText: string): Promise<ParsedCv["sections"]> {
+  const anthropic = getClient();
+
+  const message = await anthropic.messages.create({
+    model: process.env.ANTHROPIC_MODEL || "claude-sonnet-5",
+    max_tokens: 3000,
+    thinking: { type: "disabled" },
+    system: CV_PARSE_SYSTEM_PROMPT,
+    messages: [{ role: "user", content: `Texte brut du CV :\n"""\n${rawText}\n"""` }],
+  } as Anthropic.MessageCreateParamsNonStreaming);
+
+  const textBlock = message.content.find((b) => b.type === "text");
+  if (!textBlock || textBlock.type !== "text") throw new Error("Reponse IA vide");
+
+  const jsonMatch = textBlock.text.match(/\{[\s\S]*\}/);
+  if (!jsonMatch) throw new Error("Reponse IA non structuree (JSON attendu)");
+  const parsed = JSON.parse(jsonMatch[0]) as {
+    summary?: string | null;
+    experiences?: unknown;
+    education?: unknown;
+    languages?: unknown;
+  };
+
+  const normalizedSource = normalizeWhitespace(rawText);
+
+  const summary =
+    typeof parsed.summary === "string" && isVerbatimExtract(parsed.summary, normalizedSource)
+      ? parsed.summary.trim()
+      : null;
+
+  const toVerbatimList = (value: unknown): string[] =>
+    Array.isArray(value)
+      ? value.filter((v): v is string => typeof v === "string" && isVerbatimExtract(v, normalizedSource)).map((v) => v.trim())
+      : [];
+
+  return {
+    summary,
+    experiences: toVerbatimList(parsed.experiences),
+    education: toVerbatimList(parsed.education),
+    languages: toVerbatimList(parsed.languages),
+  };
+}
+
+export async function parseCvWithAi(rawText: string): Promise<ParsedCv> {
+  const sections = await parseCvSectionsWithAi(rawText);
+  return { rawText, skills: extractSkills(rawText), sections };
+}
+
+export async function parseCv(rawText: string): Promise<{ parsed: ParsedCv; usedAi: boolean; aiError?: string }> {
+  if (isAiEnabled()) {
+    try {
+      const parsed = await parseCvWithAi(rawText);
+      return { parsed, usedAi: true };
+    } catch (err) {
+      const aiError = describeAiError(err);
+      console.error("Decoupage IA du CV impossible, repli sur le mode heuristique:", err);
+      return { parsed: parseCvText(rawText), usedAi: false, aiError };
+    }
+  }
+  return { parsed: parseCvText(rawText), usedAi: false };
 }

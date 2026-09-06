@@ -203,6 +203,19 @@ Avec cette cle : Claude reformule/reordonne le CV en respectant une regle
 stricte de non-invention (le prompt interdit explicitement d'ajouter une
 competence, experience ou donnee absente du CV source).
 
+Cette meme cle active aussi le **decoupage du CV en sections par IA** (a
+l'import, `src/lib/ai.ts` -> `parseCv`) : plutot que de chercher des
+intitules de section attendus ("Experience", "Formation"...) comme le fait
+le repli heuristique (`cvParser.ts`), Claude identifie chaque section par
+son contenu, ce qui evite un mauvais decoupage sur un CV a la mise en page
+inhabituelle (et donc une erreur qui se propagerait ensuite au score, aux
+suggestions et au matching). Un garde-fou verifie que chaque extrait
+renvoye par l'IA figure bien mot pour mot dans le texte source (aux
+espaces/sauts de ligne pres) avant de l'accepter : toute reformulation ou
+invention est rejetee plutot que silencieusement acceptee. Sans cle
+Anthropic, ou en cas d'erreur de l'appel IA, le decoupage heuristique
+existant prend le relais automatiquement.
+
 ### 2. Recuperation automatique d'offres (sources multiples)
 
 Chaque source ci-dessous est independante et optionnelle : active-en une ou
@@ -365,10 +378,11 @@ page propre, meme contenu texte) plutot que d'etre le fichier exact importe.
 prisma/schema.prisma       Modeles Profile / Criteria / Offer / GmailAccount /
                             ProcessedEmail / CvVersion
 src/lib/
-  cvParser.ts               Analyse heuristique du texte du CV
+  cvParser.ts               Analyse heuristique du texte du CV (repli sans IA)
   skills.ts                 Dictionnaire de competences + extraction
   matching.ts                Calcul du score de compatibilite
-  ai.ts                      Propositions d'edition de CV + classification d'emails (IA ou fallback)
+  ai.ts                      Decoupage du CV en sections, propositions d'edition,
+                               notation, classification d'emails (IA ou fallback)
   cvVersion.ts                Application des decisions accepter/modifier/refuser + nommage des versions
   franceTravail.ts           Adaptateur API France Travail
   adzuna.ts                   Adaptateur API Adzuna
