@@ -357,6 +357,7 @@ src/lib/
   pdfText.ts                  Extraction du texte d'un PDF importe
   cvTemplate.ts                Template PDF (design soigne) pour toutes les versions de CV
 src/app/
+  page.tsx                    Accueil / tableau de bord (stats, offres a fort potentiel non traitees)
   profile/, criteria/, offers/, cv-editor/, cv-history/, integrations/  Pages
   api/                        Routes API (profile, criteria, offers, cv/upload,
                                cv-versions, offers/export, gmail/...)

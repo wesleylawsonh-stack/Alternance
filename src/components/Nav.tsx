@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const LINKS = [
+  { href: "/", label: "Accueil" },
   { href: "/profile", label: "Profil" },
   { href: "/criteria", label: "Criteres" },
   { href: "/offers", label: "Offres" },
@@ -30,7 +31,7 @@ export default function Nav() {
   return (
     <header className="border-b border-slate-200 bg-white">
       <div className="mx-auto max-w-5xl px-4 py-3 flex items-center justify-between">
-        <Link href="/offers" className="font-semibold text-brand-700 text-lg">
+        <Link href="/" className="font-semibold text-brand-700 text-lg">
           MonAlternance
         </Link>
         <div className="flex items-center gap-3">
