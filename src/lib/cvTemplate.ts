@@ -1,4 +1,17 @@
-import { PDFDocument, StandardFonts, rgb, PDFFont, PDFImage } from "pdf-lib";
+import {
+  PDFDocument,
+  StandardFonts,
+  rgb,
+  PDFFont,
+  PDFImage,
+  PDFPage,
+  pushGraphicsState,
+  popGraphicsState,
+  moveTo,
+  appendBezierCurve,
+  clip,
+  endPath,
+} from "pdf-lib";
 
 export type CvContent = {
   headline: string | null;
@@ -22,6 +35,28 @@ export type CvPhoto = {
   contentType: "image/jpeg" | "image/png";
 };
 
+/**
+ * Recupere les octets de la photo de profil (Vercel Blob) pour l'integrer
+ * au PDF genere. Ne fait jamais echouer l'appelant : une photo absente,
+ * inaccessible, ou dans un format que pdf-lib ne sait pas integrer
+ * (seuls JPEG/PNG sont supportes) donne simplement un CV sans photo
+ * plutot qu'une erreur.
+ */
+export async function fetchProfilePhoto(photoUrl: string | null | undefined): Promise<CvPhoto | null> {
+  if (!photoUrl) return null;
+  try {
+    const res = await fetch(photoUrl);
+    if (!res.ok) return null;
+    const contentType = res.headers.get("content-type");
+    if (contentType !== "image/png" && contentType !== "image/jpeg") return null;
+    const bytes = new Uint8Array(await res.arrayBuffer());
+    return { bytes, contentType };
+  } catch (err) {
+    console.error("Impossible de recuperer la photo de profil pour le PDF:", err);
+    return null;
+  }
+}
+
 const PAGE_WIDTH = 595.28; // A4
 const PAGE_HEIGHT = 841.89;
 const MARGIN = 46;
@@ -35,6 +70,49 @@ const TEXT_MUTED = rgb(0.42, 0.46, 0.53);
 const CHIP_BG = rgb(0.92, 0.94, 0.99);
 const HEADER_BG = rgb(0.965, 0.972, 0.992);
 const RULE = rgb(0.85, 0.88, 0.95);
+
+/**
+ * Dessine une image "en couvrant" (crop, jamais d'etirement) un cercle de
+ * diametre donne, via un chemin de decoupe (clip) en cercle construit a la
+ * bezier. pdf-lib n'offre pas de decoupe circulaire d'image prete a
+ * l'emploi : c'est le recours bas niveau documente pour ce cas (moveTo +
+ * 4 courbes de bezier approximant un cercle, clip, puis dessin de l'image
+ * a l'interieur de la region decoupee).
+ */
+function drawCircularImage(page: PDFPage, image: PDFImage, opts: { x: number; y: number; diameter: number }) {
+  const { x, y, diameter } = opts;
+  const r = diameter / 2;
+  const cx = x + r;
+  const cy = y + r;
+  const k = r * 0.5523; // constante d'approximation d'un cercle par 4 courbes de Bezier
+
+  page.pushOperators(
+    pushGraphicsState(),
+    moveTo(cx + r, cy),
+    appendBezierCurve(cx + r, cy + k, cx + k, cy + r, cx, cy + r),
+    appendBezierCurve(cx - k, cy + r, cx - r, cy + k, cx - r, cy),
+    appendBezierCurve(cx - r, cy - k, cx - k, cy - r, cx, cy - r),
+    appendBezierCurve(cx + k, cy - r, cx + r, cy - k, cx + r, cy),
+    clip(),
+    endPath()
+  );
+
+  const imageAspect = image.width / image.height;
+  let drawWidth = diameter;
+  let drawHeight = diameter;
+  let drawX = x;
+  let drawY = y;
+  if (imageAspect > 1) {
+    drawWidth = diameter * imageAspect;
+    drawX = x - (drawWidth - diameter) / 2;
+  } else if (imageAspect < 1) {
+    drawHeight = diameter / imageAspect;
+    drawY = y - (drawHeight - diameter) / 2;
+  }
+  page.drawImage(image, { x: drawX, y: drawY, width: drawWidth, height: drawHeight });
+
+  page.pushOperators(popGraphicsState());
+}
 
 function wrapText(text: string, font: PDFFont, size: number, maxWidth: number): string[] {
   const words = text.split(/\s+/).filter(Boolean);
@@ -126,14 +204,7 @@ export async function renderCvPdf(content: CvContent, contact: CvContact, photo?
     if (y - needed < MARGIN) newPage();
   };
 
-  // --- En-tete (bande de couleur, nom, accroche, contact, photo) ---
-  const contactParts = [contact.location, contact.phone, contact.email, contact.linkedin].filter(Boolean);
-  const headlineLines = content.headline ? wrapText(content.headline, font, 11, CONTENT_WIDTH - 120) : [];
-  const headerHeight = 58 + headlineLines.length * 14 + (contactParts.length ? 16 : 0);
-
-  page.drawRectangle({ x: 0, y: PAGE_HEIGHT - headerHeight, width: PAGE_WIDTH, height: headerHeight, color: HEADER_BG });
-  page.drawRectangle({ x: 0, y: PAGE_HEIGHT - headerHeight, width: 6, height: headerHeight, color: BRAND });
-
+  // --- En-tete (bande de couleur, photo circulaire, nom, accroche, contact) ---
   let photoImage: PDFImage | null = null;
   if (photo) {
     try {
@@ -143,34 +214,47 @@ export async function renderCvPdf(content: CvContent, contact: CvContact, photo?
     }
   }
 
-  const photoSize = 62;
-  const textRightEdge = photoImage ? PAGE_WIDTH - MARGIN - photoSize - 16 : PAGE_WIDTH - MARGIN;
+  const photoSize = photoImage ? 76 : 0;
+  const textLeftEdge = photoImage ? MARGIN + 20 + photoSize + 18 : MARGIN + 12;
+  const textMaxWidth = PAGE_WIDTH - MARGIN - textLeftEdge;
+
+  const contactParts = [contact.location, contact.phone, contact.email, contact.linkedin].filter(Boolean);
+  const headlineLines = content.headline ? wrapText(content.headline, font, 11.5, textMaxWidth) : [];
+  const headerContentHeight = 26 + headlineLines.length * 15 + (contactParts.length ? 16 : 0);
+  const headerHeight = Math.max(photoSize + 34, headerContentHeight + 34);
+
+  page.drawRectangle({ x: 0, y: PAGE_HEIGHT - headerHeight, width: PAGE_WIDTH, height: headerHeight, color: HEADER_BG });
+  page.drawRectangle({ x: 0, y: PAGE_HEIGHT - headerHeight - 3, width: PAGE_WIDTH, height: 3, color: BRAND });
 
   if (photoImage) {
-    page.drawImage(photoImage, {
-      x: PAGE_WIDTH - MARGIN - photoSize,
-      y: PAGE_HEIGHT - headerHeight + (headerHeight - photoSize) / 2,
-      width: photoSize,
-      height: photoSize,
+    const photoX = MARGIN + 20;
+    const photoY = PAGE_HEIGHT - headerHeight + (headerHeight - photoSize) / 2;
+    drawCircularImage(page, photoImage, { x: photoX, y: photoY, diameter: photoSize });
+    page.drawCircle({
+      x: photoX + photoSize / 2,
+      y: photoY + photoSize / 2,
+      size: photoSize / 2 + 1.5,
+      borderColor: BRAND,
+      borderWidth: 2,
     });
   }
 
-  y = PAGE_HEIGHT - 40;
-  page.drawText(contact.fullName || "Candidat", { x: MARGIN + 12, y, size: 20, font: boldFont, color: TEXT_DARK });
+  y = PAGE_HEIGHT - (headerHeight - headerContentHeight) / 2 - 16;
+  page.drawText(contact.fullName || "Candidat", { x: textLeftEdge, y, size: 21, font: boldFont, color: TEXT_DARK });
   y -= 22;
 
   for (const line of headlineLines) {
-    page.drawText(line, { x: MARGIN + 12, y, size: 11, font, color: BRAND_DARK, maxWidth: textRightEdge - MARGIN - 12 });
-    y -= 14;
+    page.drawText(line, { x: textLeftEdge, y, size: 11.5, font, color: BRAND_DARK, maxWidth: textMaxWidth });
+    y -= 15;
   }
 
   if (contactParts.length) {
     const contactLine = contactParts.join("   •   ");
-    page.drawText(contactLine, { x: MARGIN + 12, y, size: 9, font, color: TEXT_MUTED });
+    page.drawText(contactLine, { x: textLeftEdge, y, size: 9, font, color: TEXT_MUTED });
     y -= 16;
   }
 
-  y = PAGE_HEIGHT - headerHeight - 22;
+  y = PAGE_HEIGHT - headerHeight - 24;
 
   const drawSectionHeader = (label: string) => {
     ensureSpace(26);

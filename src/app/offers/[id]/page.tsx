@@ -282,9 +282,19 @@ export default function OfferDetailPage({ params }: { params: Promise<{ id: stri
                   <p className="text-sm font-medium text-slate-800">{v.label}</p>
                   <p className="text-xs text-slate-500">{new Date(v.createdAt).toLocaleString("fr-FR")}</p>
                 </div>
-                <a className="btn-secondary" href={`/api/cv-versions/${v.id}/download`}>
-                  Telecharger
-                </a>
+                <div className="flex gap-2 shrink-0">
+                  <a
+                    className="btn-secondary"
+                    href={`/api/cv-versions/${v.id}/download?preview=1`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    Previsualiser
+                  </a>
+                  <a className="btn-secondary" href={`/api/cv-versions/${v.id}/download`}>
+                    Telecharger
+                  </a>
+                </div>
               </div>
             ))}
           </div>

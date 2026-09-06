@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { asObject } from "@/lib/json";
-import { renderCvPdf, type CvContent } from "@/lib/cvTemplate";
+import { renderCvPdf, fetchProfilePhoto, type CvContent } from "@/lib/cvTemplate";
 import { getAuthorizedGmailClient, sendGmailMessage } from "@/lib/gmail";
 
 const EMPTY_CONTENT: CvContent = { headline: null, summary: null, skills: [], experiences: [], education: [], languages: [] };
@@ -52,13 +52,18 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
     let attachment: { filename: string; mimeType: string; content: Buffer } | undefined;
     if (cvVersion) {
       const content = asObject<CvContent>(cvVersion.content, EMPTY_CONTENT);
-      const pdfBytes = await renderCvPdf(content, {
-        fullName: profile?.fullName ?? null,
-        email: profile?.email ?? null,
-        phone: profile?.phone ?? null,
-        location: profile?.location ?? null,
-        linkedin: profile?.linkedin ?? null,
-      });
+      const photo = await fetchProfilePhoto(profile?.photoUrl);
+      const pdfBytes = await renderCvPdf(
+        content,
+        {
+          fullName: profile?.fullName ?? null,
+          email: profile?.email ?? null,
+          phone: profile?.phone ?? null,
+          location: profile?.location ?? null,
+          linkedin: profile?.linkedin ?? null,
+        },
+        photo
+      );
       attachment = {
         filename: `${slugify(cvVersion.label) || "cv"}.pdf`,
         mimeType: "application/pdf",

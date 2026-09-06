@@ -188,6 +188,14 @@ function CvEditorContent() {
         <div className="card p-6 text-center space-y-4">
           <h1 className="text-xl font-semibold text-slate-900">CV genere : {result.label}</h1>
           <div className="flex justify-center gap-3">
+            <a
+              className="btn-secondary"
+              href={`/api/cv-versions/${result.id}/download?preview=1`}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Previsualiser
+            </a>
             <a className="btn-primary" href={`/api/cv-versions/${result.id}/download`}>
               Telecharger le PDF
             </a>

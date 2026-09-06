@@ -107,7 +107,13 @@ d'emploi/alternance :
   Garde-fous anti-invention à plusieurs niveaux (prompt strict, filtrage
   programmatique des compétences proposées, rejet des réponses
   démesurément plus longues que l'original). Génère ensuite une nouvelle
-  version de CV en PDF (template propre et professionnel).
+  version de CV en PDF (template moderne : en-tête avec **photo de profil
+  circulaire** si une photo a été importée sur la page Profil, nom/accroche
+  bien mis en valeur, sections avec accent de couleur, compétences en
+  étiquettes). Un bouton **"Prévisualiser"** (partout où un CV peut être
+  téléchargé : éditeur de CV, Mes CV, page d'une offre, file de
+  candidatures) ouvre le PDF dans un nouvel onglet pour le consulter avant
+  de le télécharger ou de l'envoyer.
 - **✨ Optimiser ma candidature** : depuis une offre, un parcours en un
   clic qui enchaîne l'analyse de l'offre, l'adaptation du CV (avec la
   revue avant/après habituelle, rien n'est appliqué sans validation), la

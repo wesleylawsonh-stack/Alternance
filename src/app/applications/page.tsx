@@ -178,6 +178,14 @@ export default function ApplicationsPage() {
               </div>
 
               <div className="flex items-center gap-2 flex-wrap">
+                <a
+                  className="btn-secondary text-sm"
+                  href={`/api/cv-versions/${draft.cvVersionId}/download?preview=1`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Previsualiser le CV
+                </a>
                 <a className="btn-secondary text-sm" href={`/api/cv-versions/${draft.cvVersionId}/download`}>
                   Telecharger le CV adapte
                 </a>

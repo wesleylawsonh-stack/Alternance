@@ -65,9 +65,14 @@ export default function CvHistoryPage() {
             <h3 className="font-medium text-slate-900">CV original</h3>
             <p className="text-sm text-slate-500">Le fichier tel qu&apos;importe sur la page Profil.</p>
           </div>
-          <a className="btn-secondary" href="/api/profile/cv/download">
-            Telecharger
-          </a>
+          <div className="flex gap-2 shrink-0">
+            <a className="btn-secondary" href="/api/profile/cv/download?preview=1" target="_blank" rel="noopener noreferrer">
+              Previsualiser
+            </a>
+            <a className="btn-secondary" href="/api/profile/cv/download">
+              Telecharger
+            </a>
+          </div>
         </div>
       )}
 
@@ -92,6 +97,14 @@ export default function CvHistoryPage() {
                 </p>
               </div>
               <div className="flex gap-2 shrink-0">
+                <a
+                  className="btn-secondary"
+                  href={`/api/cv-versions/${v.id}/download?preview=1`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Previsualiser
+                </a>
                 <a className="btn-secondary" href={`/api/cv-versions/${v.id}/download`}>
                   Telecharger
                 </a>

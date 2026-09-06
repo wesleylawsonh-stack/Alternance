@@ -1,16 +1,19 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { asStringArray, asObject } from "@/lib/json";
-import { cvContentFromProfile, renderCvPdf } from "@/lib/cvTemplate";
+import { cvContentFromProfile, renderCvPdf, fetchProfilePhoto } from "@/lib/cvTemplate";
 
 const EMPTY_SECTIONS = { summary: null, experiences: [], education: [], languages: [] };
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   const profile = await prisma.profile.findUnique({ where: { id: "singleton" } });
 
   if (!profile || !profile.cvRawText) {
     return NextResponse.json({ error: "Aucun CV importe." }, { status: 404 });
   }
+
+  const preview = req.nextUrl.searchParams.get("preview") === "1";
+  const disposition = `${preview ? "inline" : "attachment"}; filename="CV_original.pdf"`;
 
   // Le fichier original tel qu'importe est disponible : on le sert a
   // l'identique (le plus fidele possible), plutot que de le reconstruire.
@@ -22,7 +25,7 @@ export async function GET() {
         status: 200,
         headers: {
           "Content-Type": "application/pdf",
-          "Content-Disposition": `attachment; filename="CV_original.pdf"`,
+          "Content-Disposition": disposition,
         },
       });
     }
@@ -37,19 +40,24 @@ export async function GET() {
     cvSections: asObject(profile.cvSections, EMPTY_SECTIONS),
   });
 
-  const pdfBytes = await renderCvPdf(content, {
-    fullName: profile.fullName,
-    email: profile.email,
-    phone: profile.phone,
-    location: profile.location,
-    linkedin: profile.linkedin,
-  });
+  const photo = await fetchProfilePhoto(profile.photoUrl);
+  const pdfBytes = await renderCvPdf(
+    content,
+    {
+      fullName: profile.fullName,
+      email: profile.email,
+      phone: profile.phone,
+      location: profile.location,
+      linkedin: profile.linkedin,
+    },
+    photo
+  );
 
   return new NextResponse(new Uint8Array(pdfBytes), {
     status: 200,
     headers: {
       "Content-Type": "application/pdf",
-      "Content-Disposition": `attachment; filename="CV_original.pdf"`,
+      "Content-Disposition": disposition,
     },
   });
 }
