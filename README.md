@@ -363,6 +363,18 @@ src/app/
                                cv-versions, offers/export, gmail/...)
 ```
 
+## Tests
+
+```
+npm test
+```
+
+Tests unitaires (Vitest) sur la logique la plus sensible aux regressions :
+`matching.ts` (types de contrat par synonymes, mots-cles bonus/exclus,
+localisation par ville/rayon et par region, recommandations),
+`frenchRegions.ts` et `geocode.ts` (code departement). Les appels reseau
+(geocodage) sont mockes pour des tests rapides et deterministes.
+
 ## Notes
 
 - Base de donnees PostgreSQL (locale ou hebergee) — voir "Base de donnees".
