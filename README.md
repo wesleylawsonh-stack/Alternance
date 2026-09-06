@@ -66,6 +66,15 @@ d'emploi/alternance :
   le maximum documenté par leur API —, et jusqu'à 100 pour Adzuna, qui
   pagine automatiquement sur plusieurs pages officielles de leur API au-delà
   de leur limite de 50 résultats par page, et pour La bonne alternance).
+  Adzuna et La bonne alternance interrogent aussi désormais **chaque ville**
+  de tes critères de localisation séparément (jusqu'à 5), et non plus
+  uniquement la première : avec plusieurs villes renseignées, ignorer les
+  suivantes limitait artificiellement le nombre d'offres remontées par ces
+  deux sources. Une région (ex: "Île-de-France") n'est volontairement pas
+  envoyée à ces adaptateurs (ni géocodable pour La bonne alternance, ni
+  fiable comme mot-clé pour Adzuna) : c'est le matching local qui couvre
+  déjà toute la région à partir des offres remontées sans filtre de
+  localisation.
   Le volume total d'offres reste néanmoins limité aux sources à API
   officielle (voir plus bas) : contrairement à un agrégateur qui couvrirait
   des dizaines de job boards et sites carrières d'entreprise, on ne peut pas

@@ -5,8 +5,9 @@
 // adaptateur (voir franceTravail.ts / adzuna.ts) et le brancher ici.
 
 import { fetchFranceTravailOffers, isFranceTravailConfigured, type ExternalOffer } from "./franceTravail";
-import { fetchAdzunaOffers, isAdzunaConfigured } from "./adzuna";
-import { fetchLbaOffers, isLbaConfigured } from "./labonnealternance";
+import { fetchAdzunaOffers, isAdzunaConfigured, type AdzunaCriteria } from "./adzuna";
+import { fetchLbaOffers, isLbaConfigured, type LbaCriteria } from "./labonnealternance";
+import { matchRegionName } from "./frenchRegions";
 
 export type { ExternalOffer };
 
@@ -28,6 +29,46 @@ export type OfferSourceCriteria = {
 const FRANCE_TRAVAIL_LIMIT = 150;
 const ADZUNA_LIMIT = 100;
 const LBA_LIMIT = 100;
+
+// Adzuna et La bonne alternance filtrent tous deux par une localisation
+// unique (coordonnees geocodees pour LBA, texte libre pour Adzuna) : sans
+// ce garde-fou, seule la PREMIERE localisation de tes criteres serait
+// jamais interrogee, les autres villes/regions configurees etant
+// silencieusement ignorees. On interroge donc chaque ville separement (en
+// parallele) et on fusionne les resultats - les doublons entre appels sont
+// deja geres par la deduplication existante lors de l'insertion en base.
+const MAX_LOCATIONS_PER_SOURCE = 5;
+
+// Une region (ex: "Ile-de-France") n'est pas un lieu geocodable : on ne la
+// passe pas a ces adaptateurs (LBA echouerait a la geocoder, Adzuna la
+// traiterait comme un simple mot-cle peu fiable) - le matching local
+// (frenchRegions.ts) se charge deja de couvrir toute la region a partir des
+// offres remontees sans filtre de localisation.
+export function cityLocations(locations: string[]): string[] {
+  return locations.filter((loc) => !matchRegionName(loc));
+}
+
+async function fetchAdzunaForAllLocations(criteria: AdzunaCriteria, limit: number): Promise<ExternalOffer[]> {
+  const cities = cityLocations(criteria.locations).slice(0, MAX_LOCATIONS_PER_SOURCE);
+  if (cities.length <= 1) return fetchAdzunaOffers(criteria, limit);
+
+  const perLocationLimit = Math.max(20, Math.ceil(limit / cities.length));
+  const results = await Promise.all(
+    cities.map((city) => fetchAdzunaOffers({ ...criteria, locations: [city] }, perLocationLimit))
+  );
+  return results.flat();
+}
+
+async function fetchLbaForAllLocations(criteria: LbaCriteria, limit: number): Promise<ExternalOffer[]> {
+  const cities = cityLocations(criteria.locations).slice(0, MAX_LOCATIONS_PER_SOURCE);
+  if (cities.length <= 1) return fetchLbaOffers(criteria, limit);
+
+  const perLocationLimit = Math.max(20, Math.ceil(limit / cities.length));
+  const results = await Promise.all(
+    cities.map((city) => fetchLbaOffers({ ...criteria, locations: [city] }, perLocationLimit))
+  );
+  return results.flat();
+}
 
 export function isAnySourceConfigured(): boolean {
   return isFranceTravailConfigured() || isAdzunaConfigured() || isLbaConfigured();
@@ -67,7 +108,7 @@ export async function fetchAllExternalOffers(
 
   if (isAdzunaConfigured()) {
     tasks.push(
-      fetchAdzunaOffers(criteria, ADZUNA_LIMIT)
+      fetchAdzunaForAllLocations(criteria, ADZUNA_LIMIT)
         .then((offers) => offers.map((o) => ({ ...o, source: "adzuna" })))
         .catch((err) => {
           console.error("Erreur source Adzuna:", err);
@@ -79,7 +120,7 @@ export async function fetchAllExternalOffers(
 
   if (isLbaConfigured()) {
     tasks.push(
-      fetchLbaOffers(criteria, LBA_LIMIT)
+      fetchLbaForAllLocations(criteria, LBA_LIMIT)
         .then((offers) => offers.map((o) => ({ ...o, source: "lba" })))
         .catch((err) => {
           console.error("Erreur source La bonne alternance:", err);
