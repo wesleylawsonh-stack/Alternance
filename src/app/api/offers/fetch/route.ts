@@ -6,6 +6,7 @@ import { asStringArray, asObject } from "@/lib/json";
 import { fetchAllExternalOffers, isAnySourceConfigured } from "@/lib/offerSources";
 import { computeOfferContentHash } from "@/lib/contentHash";
 import { sendOfferDigest } from "@/lib/emailDigest";
+import { checkMandatoryCriteria } from "@/lib/ai";
 
 const EMPTY_SECTIONS = { summary: null, experiences: [] as string[], education: [] as string[], languages: [] as string[] };
 
@@ -98,11 +99,17 @@ export async function POST(req: NextRequest) {
       continue;
     }
 
+    const mandatoryCriteriaMet = await checkMandatoryCriteria(criteria?.mandatoryCriteria, {
+      title: ext.title,
+      company: ext.company,
+      description: ext.description,
+    });
+
     const match = await computeWeightedMatch(
       cvSkills,
       profile?.cvRawText ?? "",
       cvEducationText,
-      { contractType: ext.contractType, location: ext.location, description: ext.description },
+      { contractType: ext.contractType, location: ext.location, description: ext.description, mandatoryCriteriaMet },
       matchCriteria
     );
 
@@ -119,6 +126,7 @@ export async function POST(req: NextRequest) {
         externalId: ext.externalId,
         contentHash,
         postedAt: ext.postedAt ? new Date(ext.postedAt) : null,
+        mandatoryCriteriaMet,
         ...matchResultToOfferData(match),
       },
     });

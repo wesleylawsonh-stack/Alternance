@@ -59,6 +59,7 @@ model Criteria {
   searchDescription String? // texte libre : ce que l'utilisateur recherche, utilise pour affiner le score et l'adaptation de CV
   autoFetchEnabled Boolean @default(true) // recuperation automatique (cron) activee/desactivee
   emailDigestEnabled Boolean @default(false) // envoie un email (via Gmail) apres chaque recuperation automatique listant les nouvelles offres a fort potentiel. Necessite un compte Gmail connecte avec la permission d'envoi (scope gmail.send) - desactive par defaut car ca demande de reconnecter Gmail.
+  mandatoryCriteria String? // texte libre decrivant un critere obligatoire (ex: "dimension internationale") verifie par l'IA (titre+missions+entreprise) sur chaque nouvelle offre, avec repli par mots-cles si l'IA n'est pas configuree - voir ai.ts#checkMandatoryCriteria
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 }
@@ -85,6 +86,7 @@ model Offer {
   criteriaNotRespected String? // JSON string[]
   mainReason           String? // raison principale du score
   recommendation       String? // POSTULER | CONSIDERER | FAIBLE | IGNORER
+  mandatoryCriteriaMet Boolean? // resultat de la verification du critere obligatoire (Criteria.mandatoryCriteria) au moment de la recuperation ; null = aucun critere obligatoire defini a ce moment-la (jamais recalcule retroactivement, voir README)
   applicationStatus    String    @default("NOT_APPLIED") // NOT_APPLIED | APPLIED | INTERVIEW | OFFER | REJECTED
   comments             String? // notes libres + journal des mises a jour automatiques (Gmail)
   postedAt             DateTime?

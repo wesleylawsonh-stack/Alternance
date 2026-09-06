@@ -17,6 +17,7 @@ type Criteria = {
   searchDescription: string;
   autoFetchEnabled: boolean;
   emailDigestEnabled: boolean;
+  mandatoryCriteria: string;
 };
 
 const EMPTY: Criteria = {
@@ -31,6 +32,7 @@ const EMPTY: Criteria = {
   searchDescription: "",
   autoFetchEnabled: true,
   emailDigestEnabled: false,
+  mandatoryCriteria: "",
 };
 
 const CONTRACT_OPTIONS = ["Alternance", "Stage", "CDI", "CDD", "Interim"];
@@ -68,6 +70,7 @@ export default function CriteriaPage() {
             searchDescription: data.criteria.searchDescription ?? "",
             autoFetchEnabled: data.criteria.autoFetchEnabled ?? true,
             emailDigestEnabled: !!data.criteria.emailDigestEnabled,
+            mandatoryCriteria: data.criteria.mandatoryCriteria ?? "",
           });
         }
         setLoading(false);
@@ -228,6 +231,23 @@ export default function CriteriaPage() {
             value={arrToText(criteria.excludeKeywords)}
             onChange={(e) => setCriteria({ ...criteria, excludeKeywords: textToArr(e.target.value) })}
           />
+        </div>
+
+        <div>
+          <label className="label">Critere obligatoire (optionnel)</label>
+          <textarea
+            className="input"
+            rows={2}
+            placeholder="Ex: dimension internationale (missions, clients ou equipes a l'etranger)"
+            value={criteria.mandatoryCriteria}
+            onChange={(e) => setCriteria({ ...criteria, mandatoryCriteria: e.target.value })}
+          />
+          <p className="text-xs text-slate-400 mt-1">
+            Verifie par l&apos;IA (titre, missions et description de l&apos;entreprise) sur chaque nouvelle offre
+            recuperee - une offre qui n&apos;y correspond pas est fortement penalisee. Ne s&apos;applique qu&apos;aux
+            offres recuperees APRES avoir defini ce critere (pas de recalcul retroactif). Sans cle IA configuree,
+            repli sur une simple recherche de mots-cles (moins fiable).
+          </p>
         </div>
 
         <div className="pt-2 border-t border-slate-100">

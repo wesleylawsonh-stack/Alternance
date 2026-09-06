@@ -142,6 +142,35 @@ describe("computeWeightedMatch - localisation par region", () => {
   });
 });
 
+describe("computeWeightedMatch - critere obligatoire", () => {
+  it("penalise fortement une offre qui ne correspond pas au critere obligatoire", async () => {
+    const cv = "Developpeur React JavaScript junior en alternance.";
+    const offerMet = baseOffer({ description: "Alternance developpeur React JavaScript.", mandatoryCriteriaMet: true });
+    const offerNotMet = baseOffer({ description: "Alternance developpeur React JavaScript.", mandatoryCriteriaMet: false });
+
+    const resultMet = await computeWeightedMatch([], cv, "", offerMet, baseCriteria());
+    const resultNotMet = await computeWeightedMatch([], cv, "", offerNotMet, baseCriteria());
+
+    expect(resultMet.criteriaRespected).toContain("Critere obligatoire");
+    expect(resultNotMet.criteriaNotRespected).toContain("Critere obligatoire");
+    expect(resultNotMet.score).toBeLessThan(resultMet.score);
+    expect(resultNotMet.recommendation).toBe("IGNORER");
+  });
+
+  it("ne penalise pas quand le critere obligatoire n'a pas ete evalue (null/undefined)", async () => {
+    const cv = "Developpeur React JavaScript, alternance.";
+    const offer = baseOffer({ description: "Alternance React JavaScript.", mandatoryCriteriaMet: null });
+    const offerNoField = baseOffer({ description: "Alternance React JavaScript." });
+
+    const resultNull = await computeWeightedMatch([], cv, "", offer, baseCriteria());
+    const resultUndefined = await computeWeightedMatch([], cv, "", offerNoField, baseCriteria());
+
+    expect(resultNull.criteriaNotRespected).not.toContain("Critere obligatoire");
+    expect(resultUndefined.criteriaNotRespected).not.toContain("Critere obligatoire");
+    expect(resultNull.score).toBe(resultUndefined.score);
+  });
+});
+
 describe("computeWeightedMatch - recommandation", () => {
   it("recommande POSTULER pour un excellent match sans obstacle", async () => {
     const cvSkills = ["react", "javascript", "typescript"];

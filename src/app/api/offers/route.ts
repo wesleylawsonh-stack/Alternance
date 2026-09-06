@@ -4,6 +4,7 @@ import { computeWeightedMatch, buildMatchCriteria, matchResultToOfferData } from
 import { asStringArray, asObject } from "@/lib/json";
 import { serializeOffer } from "@/lib/serialize";
 import { computeOfferContentHash } from "@/lib/contentHash";
+import { checkMandatoryCriteria } from "@/lib/ai";
 
 const EMPTY_SECTIONS = { summary: null, experiences: [] as string[], education: [] as string[], languages: [] as string[] };
 
@@ -78,17 +79,18 @@ export async function POST(req: NextRequest) {
   const contractType = typeof body.contractType === "string" ? body.contractType.trim() || null : null;
   const location = typeof body.location === "string" ? body.location.trim() || null : null;
 
+  const company = typeof body.company === "string" ? body.company.trim() || null : null;
+
   const cvSkills = asStringArray(profile?.cvSkills);
   const cvEducationText = asObject(profile?.cvSections, EMPTY_SECTIONS).education.join(" ");
+  const mandatoryCriteriaMet = await checkMandatoryCriteria(criteria?.mandatoryCriteria, { title, company, description });
   const match = await computeWeightedMatch(
     cvSkills,
     profile?.cvRawText ?? "",
     cvEducationText,
-    { contractType, location, description },
+    { contractType, location, description, mandatoryCriteriaMet },
     buildMatchCriteria(criteria)
   );
-
-  const company = typeof body.company === "string" ? body.company.trim() || null : null;
 
   const offer = await prisma.offer.create({
     data: {
@@ -100,6 +102,7 @@ export async function POST(req: NextRequest) {
       contractType,
       source: "manual",
       contentHash: computeOfferContentHash(title, company, description),
+      mandatoryCriteriaMet,
       ...matchResultToOfferData(match),
     },
   });

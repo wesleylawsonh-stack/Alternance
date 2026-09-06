@@ -34,6 +34,13 @@ export type MatchOfferInfo = {
   contractType: string | null;
   location: string | null;
   description: string;
+  // Resultat de la verification du critere obligatoire libre (voir
+  // ai.ts#checkMandatoryCriteria), deja calcule en amont (jamais d'appel IA
+  // ici : computeWeightedMatch reste synchrone/testable). null = aucun
+  // critere obligatoire n'etait defini au moment de la recuperation de
+  // cette offre : ne penalise jamais dans ce cas (ne bloque pas sur une
+  // information non evaluee).
+  mandatoryCriteriaMet?: boolean | null;
 };
 
 // Mots fonctionnels frequents en francais a ignorer lors du calcul du
@@ -59,7 +66,7 @@ function normalizeText(text: string): string {
     .replace(/[̀-ͯ]/g, "");
 }
 
-function significantWords(text: string): Set<string> {
+export function significantWords(text: string): Set<string> {
   const words = normalizeText(text)
     .split(/[^a-z0-9+]+/)
     .filter((w) => w.length > 3 && !STOPWORDS_FR.has(w));
@@ -253,6 +260,9 @@ export async function computeWeightedMatch(
   const experienceOk = seniority === null;
   const excludedHit = findExcludedKeyword(offer.description, criteria.excludeKeywords);
   const { ok: locationOk, distanceKm } = await checkLocation(offer.location, criteria);
+  // undefined/null = critere obligatoire non evalue (pas defini au moment
+  // de la recuperation) : ne penalise jamais dans ce cas.
+  const mandatoryOk = offer.mandatoryCriteriaMet !== false;
 
   let multiplier = 1;
   if (!contractOk) multiplier *= 0.35;
@@ -260,6 +270,7 @@ export async function computeWeightedMatch(
   if (!experienceOk) multiplier *= seniority === "senior" ? 0.3 : 0.55;
   if (!locationOk) multiplier *= 0.5;
   if (excludedHit) multiplier *= 0.1;
+  if (!mandatoryOk) multiplier *= 0.15;
 
   let score = Math.round(baseFit * multiplier);
 
@@ -332,8 +343,16 @@ export async function computeWeightedMatch(
     weaknesses.push(`Contient le mot-cle exclu "${excludedHit}".`);
   }
 
+  if (offer.mandatoryCriteriaMet === true) {
+    criteriaRespected.push("Critere obligatoire");
+  } else if (offer.mandatoryCriteriaMet === false) {
+    criteriaNotRespected.push("Critere obligatoire");
+    weaknesses.push("Ne semble pas correspondre au critere obligatoire que tu as defini.");
+  }
+
   let mainReason: string;
   if (excludedHit) mainReason = `Contient un mot-cle que tu exclus ("${excludedHit}").`;
+  else if (!mandatoryOk) mainReason = "Ne semble pas correspondre au critere obligatoire que tu as defini.";
   else if (!contractOk) mainReason = "Type de contrat different de ta recherche.";
   else if (!experienceOk) mainReason = `Niveau d'experience demande (${seniority}) peu compatible avec un profil junior.`;
   else if (!locationOk) mainReason = "Localisation hors de ton rayon de recherche.";

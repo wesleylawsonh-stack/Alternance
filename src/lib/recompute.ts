@@ -27,7 +27,16 @@ export async function recomputeAllOfferScores(): Promise<number> {
         cvSkills,
         cvRawText,
         cvEducationText,
-        { contractType: offer.contractType, location: offer.location, description: offer.description },
+        {
+          contractType: offer.contractType,
+          location: offer.location,
+          description: offer.description,
+          // Reutilise le resultat deja calcule a la recuperation de l'offre
+          // (voir /api/offers/fetch) : le recalculer ici pour chaque
+          // changement de criteres appellerait l'IA sur potentiellement
+          // des centaines d'offres a la fois.
+          mandatoryCriteriaMet: offer.mandatoryCriteriaMet,
+        },
         matchCriteria
       );
       return prisma.offer.update({

@@ -1,6 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
 import type { ParsedCv } from "./cvParser";
-import { computeContentOverlap } from "./matching";
+import { computeContentOverlap, significantWords } from "./matching";
 
 export function isAiEnabled(): boolean {
   return Boolean(process.env.ANTHROPIC_API_KEY);
@@ -911,4 +911,101 @@ export async function finalizeSearchProfile(
   } catch (err) {
     throw new Error(describeAiError(err));
   }
+}
+
+// --- Verification d'un critere obligatoire libre (ex: "dimension
+// internationale") sur une offre, a partir du titre, des missions et de ce
+// que le texte laisse deviner de l'entreprise. Utilise pour penaliser
+// fortement (mais jamais bloquer completement) les offres qui ne semblent
+// pas correspondre - voir matching.ts.
+
+const MANDATORY_CRITERIA_SYSTEM_PROMPT = `Tu determines si une offre d'emploi correspond a un critere obligatoire donne
+par un candidat, a partir de l'intitule du poste, de la description des
+missions, et de ce que le texte laisse deduire du profil de l'entreprise.
+N'utilise jamais d'information externe que tu inventerais : base-toi
+uniquement sur le texte fourni.
+
+Exemple : pour le critere "dimension internationale", reponds OUI si
+l'offre mentionne des missions a l'etranger, des clients/equipes
+internationaux, une entreprise presente dans plusieurs pays, l'usage
+regulier d'une langue etrangere en contexte professionnel, etc. Reponds
+NON si rien dans le texte ne l'indique, meme si ce n'est pas
+explicitement exclu (le doute ne compte pas comme une correspondance).
+
+Reponds UNIQUEMENT par un seul mot : OUI ou NON.`;
+
+export async function checkMandatoryCriteriaWithAi(
+  criteriaText: string,
+  offer: { title: string; company: string | null; description: string }
+): Promise<boolean> {
+  const anthropic = getClient();
+
+  const message = await anthropic.messages.create({
+    model: process.env.ANTHROPIC_MODEL || "claude-sonnet-5",
+    max_tokens: 5,
+    thinking: { type: "disabled" },
+    system: MANDATORY_CRITERIA_SYSTEM_PROMPT,
+    messages: [
+      {
+        role: "user",
+        content: `Critere obligatoire du candidat : "${criteriaText}"
+
+Offre :
+Intitule : ${offer.title}
+Entreprise : ${offer.company ?? "non precisee"}
+Description :
+"""
+${offer.description.slice(0, 2000)}
+"""`,
+      },
+    ],
+  } as Anthropic.MessageCreateParamsNonStreaming);
+
+  const textBlock = message.content.find((b) => b.type === "text");
+  if (!textBlock || textBlock.type !== "text") throw new Error("Reponse IA vide");
+  return textBlock.text.trim().toUpperCase().startsWith("OUI");
+}
+
+/**
+ * Repli sans IA : cherche si un mot significatif du critere (ex: "international"
+ * pour "dimension internationale obligatoire") apparait tel quel dans le
+ * titre/la description de l'offre. Beaucoup plus faible que la verification
+ * IA (une offre peut evoquer l'international sans jamais utiliser ce mot),
+ * mais mieux que ne rien verifier du tout.
+ */
+export function checkMandatoryCriteriaWithHeuristic(
+  criteriaText: string,
+  offer: { title: string; description: string }
+): boolean {
+  const criteriaWords = significantWords(criteriaText);
+  if (criteriaWords.size === 0) return true;
+  const offerWords = significantWords(`${offer.title} ${offer.description}`);
+  for (const w of criteriaWords) {
+    if (offerWords.has(w)) return true;
+  }
+  return false;
+}
+
+/**
+ * Retourne null si aucun critere obligatoire n'est defini (rien a
+ * verifier). Utilise l'IA si disponible, avec repli automatique par
+ * mots-cles en cas d'erreur ou d'absence de cle API - ne bloque jamais la
+ * recuperation d'offres.
+ */
+export async function checkMandatoryCriteria(
+  criteriaText: string | null | undefined,
+  offer: { title: string; company: string | null; description: string }
+): Promise<boolean | null> {
+  const trimmed = criteriaText?.trim();
+  if (!trimmed) return null;
+
+  if (isAiEnabled()) {
+    try {
+      return await checkMandatoryCriteriaWithAi(trimmed, offer);
+    } catch (err) {
+      console.error("Verification IA du critere obligatoire impossible, repli sur mots-cles:", err);
+      return checkMandatoryCriteriaWithHeuristic(trimmed, offer);
+    }
+  }
+  return checkMandatoryCriteriaWithHeuristic(trimmed, offer);
 }

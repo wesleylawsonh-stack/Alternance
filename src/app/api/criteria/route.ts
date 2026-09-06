@@ -35,6 +35,7 @@ export async function PUT(req: NextRequest) {
     searchDescription: typeof body.searchDescription === "string" ? body.searchDescription.trim() || null : null,
     autoFetchEnabled: body.autoFetchEnabled === undefined ? true : Boolean(body.autoFetchEnabled),
     emailDigestEnabled: Boolean(body.emailDigestEnabled),
+    mandatoryCriteria: typeof body.mandatoryCriteria === "string" ? body.mandatoryCriteria.trim() || null : null,
   };
 
   const criteria = await prisma.criteria.upsert({

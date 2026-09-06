@@ -21,6 +21,13 @@ d'emploi/alternance :
   (ex: "Alternance" reconnaît aussi "Contrat d'apprentissage"/"Contrat de
   professionnalisation", les libellés réels utilisés par les sources
   d'offres) plutôt qu'une simple sous-chaîne exacte.
+- **Critère obligatoire** (texte libre, ex: "dimension internationale") :
+  analysé par l'IA (titre, missions, description de l'entreprise) sur
+  chaque nouvelle offre récupérée — une offre qui n'y correspond pas est
+  fortement pénalisée (recommandation "Ignorer"). Repli sur une recherche
+  de mots-clés si l'IA n'est pas configurée. S'applique uniquement aux
+  offres récupérées après avoir défini le critère (pas de recalcul
+  rétroactif sur les offres déjà en base, pour éviter un pic d'appels IA).
 - **Discussion avec l'IA** (bouton "Discuter avec l'IA pour préciser ma
   recherche", page Critères) : une conversation guidée par Claude qui pose
   des questions une par une (métier visé, secteur, localisation, parcours
