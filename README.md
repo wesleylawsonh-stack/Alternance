@@ -62,8 +62,15 @@ d'emploi/alternance :
   "Refusé", qu'il vienne du bouton "Ignorer" ou d'un refus détecté via
   Gmail) et celles jugées peu pertinentes (recommandation "Ignorer") —
   désactivable via les filtres. La récupération automatique demande
-  désormais davantage d'offres par source (jusqu'à 100 pour France Travail,
-  50 pour Adzuna et La bonne alternance, contre 20 auparavant).
+  désormais davantage d'offres par source (jusqu'à 150 pour France Travail —
+  le maximum documenté par leur API —, et jusqu'à 100 pour Adzuna, qui
+  pagine automatiquement sur plusieurs pages officielles de leur API au-delà
+  de leur limite de 50 résultats par page, et pour La bonne alternance).
+  Le volume total d'offres reste néanmoins limité aux sources à API
+  officielle (voir plus bas) : contrairement à un agrégateur qui couvrirait
+  des dizaines de job boards et sites carrières d'entreprise, on ne peut pas
+  élargir cette couverture sans une API officielle supplémentaire vérifiée
+  (pas de scraping).
 - **Offres** : ajout manuel ou récupération automatique depuis plusieurs
   **sources légales à API officielle** (France Travail, Adzuna — jamais de
   scraping de LinkedIn/Indeed/Welcome to the Jungle, contraire à leurs
@@ -128,6 +135,14 @@ d'emploi/alternance :
   `CV_Loreal_BusinessDeveloper`), téléchargement et suppression.
 - **Statut de candidature** (non postulé / postulé / entretien / offre reçue
   / refusé), commentaires libres et lien direct vers l'offre originale.
+- **Pipeline de candidatures** (page "Suivi") : vue en colonnes (à postuler →
+  postulé → entretien → offre reçue → refusé) pour visualiser d'un coup
+  d'œil l'avancement de toutes tes candidatures. Fait glisser une carte
+  d'une colonne à l'autre (ou utilise le menu déroulant sur la carte, plus
+  adapté au tactile) pour changer son statut — persisté immédiatement. La
+  colonne "à postuler" ne montre que les offres à fort potentiel
+  (recommandation "à postuler"/"à considérer") pas encore traitées, pour
+  rester lisible.
 - **Export Excel** : télécharge un fichier `.xlsx` (entreprise, poste,
   statut, score, commentaires, lien...) pour suivre tes candidatures.
 - **Synchronisation Gmail** (optionnelle) : détecte automatiquement dans ta
@@ -430,7 +445,8 @@ src/lib/
   cvTemplate.ts                Template PDF (design soigne) pour toutes les versions de CV
 src/app/
   page.tsx                    Accueil / tableau de bord (stats, offres a fort potentiel non traitees)
-  profile/, criteria/, offers/, cv-editor/, cv-history/, integrations/  Pages
+  profile/, criteria/, offers/, pipeline/, applications/, cv-editor/,
+    cv-history/, integrations/  Pages
   api/                        Routes API (profile, criteria, offers, cv/upload,
                                cv-versions, offers/export, gmail/...)
 ```

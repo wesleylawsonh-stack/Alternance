@@ -20,10 +20,14 @@ export type OfferSourceCriteria = {
 // Nombre de resultats demandes par source a chaque recuperation. Plus haut
 // que les valeurs par defaut de chaque adaptateur (20) pour proposer plus
 // d'offres au candidat. France Travail accepte jusqu'a 150 resultats par
-// appel (parametre range) ; Adzuna plafonne results_per_page a 50.
-const FRANCE_TRAVAIL_LIMIT = 100;
-const ADZUNA_LIMIT = 50;
-const LBA_LIMIT = 50;
+// appel (parametre range, deja au maximum documente) ; Adzuna plafonne
+// results_per_page a 50 mais fetchAdzunaOffers pagine automatiquement sur
+// plusieurs pages officielles au-dela de cette valeur ; La bonne alternance
+// ne documente pas de parametre de pagination, la limite n'est ici qu'un
+// decoupage cote client du nombre de resultats deja renvoyes par l'API.
+const FRANCE_TRAVAIL_LIMIT = 150;
+const ADZUNA_LIMIT = 100;
+const LBA_LIMIT = 100;
 
 export function isAnySourceConfigured(): boolean {
   return isFranceTravailConfigured() || isAdzunaConfigured() || isLbaConfigured();

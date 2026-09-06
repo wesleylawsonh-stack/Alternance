@@ -10,6 +10,7 @@ const LINKS = [
   { href: "/profile", label: "Profil" },
   { href: "/criteria", label: "Criteres" },
   { href: "/offers", label: "Offres" },
+  { href: "/pipeline", label: "Suivi" },
   { href: "/applications", label: "Candidatures" },
   { href: "/cv-history", label: "Mes CV" },
   { href: "/integrations", label: "Integrations" },

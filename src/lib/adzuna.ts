@@ -12,27 +12,29 @@ export type AdzunaCriteria = {
   locations: string[];
 };
 
-const SEARCH_URL = "https://api.adzuna.com/v1/api/jobs/fr/search/1";
+// Adzuna plafonne "results_per_page" a 50 (limite documentee de leur API),
+// mais expose chaque page suivante via un numero dans l'URL elle-meme
+// (/search/1, /search/2...) : demander plus de 50 resultats revient donc a
+// interroger plusieurs pages en parallele et a les concatener, toujours via
+// le meme endpoint officiel documente.
+const BASE_URL = "https://api.adzuna.com/v1/api/jobs/fr/search";
+const MAX_RESULTS_PER_PAGE = 50;
 
 export function isAdzunaConfigured(): boolean {
   return Boolean(process.env.ADZUNA_APP_ID && process.env.ADZUNA_APP_KEY);
 }
 
-export async function fetchAdzunaOffers(criteria: AdzunaCriteria, limit = 20): Promise<ExternalOffer[]> {
-  if (!isAdzunaConfigured()) {
-    throw new Error("L'integration Adzuna n'est pas configuree (ADZUNA_APP_ID / ADZUNA_APP_KEY manquants).");
-  }
-
+async function fetchAdzunaPage(criteria: AdzunaCriteria, page: number, resultsPerPage: number): Promise<ExternalOffer[]> {
   const params = new URLSearchParams({
     app_id: process.env.ADZUNA_APP_ID!,
     app_key: process.env.ADZUNA_APP_KEY!,
-    results_per_page: String(limit),
+    results_per_page: String(resultsPerPage),
     "content-type": "application/json",
   });
   if (criteria.jobTitles.length) params.set("what", criteria.jobTitles.join(" "));
   if (criteria.locations.length) params.set("where", criteria.locations[0]);
 
-  const res = await fetch(`${SEARCH_URL}?${params.toString()}`);
+  const res = await fetch(`${BASE_URL}/${page}?${params.toString()}`);
   if (!res.ok) {
     const text = await res.text().catch(() => "");
     throw new Error(`Recherche d'offres Adzuna echouee (${res.status}): ${text}`);
@@ -63,4 +65,19 @@ export async function fetchAdzunaOffers(criteria: AdzunaCriteria, limit = 20): P
     contractType: o.contract_type ?? o.contract_time ?? null,
     postedAt: o.created ?? null,
   }));
+}
+
+export async function fetchAdzunaOffers(criteria: AdzunaCriteria, limit = 20): Promise<ExternalOffer[]> {
+  if (!isAdzunaConfigured()) {
+    throw new Error("L'integration Adzuna n'est pas configuree (ADZUNA_APP_ID / ADZUNA_APP_KEY manquants).");
+  }
+
+  const pageCount = Math.max(1, Math.ceil(limit / MAX_RESULTS_PER_PAGE));
+  const resultsPerPage = Math.min(limit, MAX_RESULTS_PER_PAGE);
+
+  const pages = await Promise.all(
+    Array.from({ length: pageCount }, (_, i) => fetchAdzunaPage(criteria, i + 1, resultsPerPage))
+  );
+
+  return pages.flat().slice(0, limit);
 }
