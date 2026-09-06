@@ -34,6 +34,7 @@ export async function PUT(req: NextRequest) {
     radiusKm: body.radiusKm ? Number(body.radiusKm) : null,
     searchDescription: typeof body.searchDescription === "string" ? body.searchDescription.trim() || null : null,
     autoFetchEnabled: body.autoFetchEnabled === undefined ? true : Boolean(body.autoFetchEnabled),
+    emailDigestEnabled: Boolean(body.emailDigestEnabled),
   };
 
   const criteria = await prisma.criteria.upsert({

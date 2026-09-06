@@ -111,6 +111,9 @@ d'emploi/alternance :
 - **Synchronisation Gmail** (optionnelle) : détecte automatiquement dans ta
   boîte mail les réponses à tes candidatures (refus, entretien, embauche) et
   met à jour le statut correspondant, avec un journal dans les commentaires.
+- **Digest email** (optionnel, page Intégrations) : envoie un email (via
+  Gmail) après chaque récupération automatique listant les nouvelles offres
+  à fort potentiel (recommandation "À postuler"/"À considérer").
 
 ## Stack technique
 
@@ -242,6 +245,13 @@ statut de candidature (refus, entretien, embauche) quand un email
 correspondant est detecte. Chaque mise a jour automatique est journalisee
 dans les commentaires de l'offre (date, expediteur, objet du mail) pour que
 tu puisses toujours verifier/corriger.
+
+Permet aussi (optionnel, page Integrations, necessite le meme compte
+Gmail connecte) l'**envoi** d'un digest email listant les nouvelles
+offres a fort potentiel apres chaque recuperation automatique — utilise
+le scope `gmail.send`. Si tu as connecte Gmail avant cette fonctionnalite,
+deconnecte puis reconnecte ton compte (Google n'accorde pas un nouveau
+scope retroactivement a un token deja emis).
 
 **Etape 1 — Creer le projet Google Cloud et les identifiants OAuth :**
 

@@ -26,6 +26,11 @@ function IntegrationsContent() {
   const [syncing, setSyncing] = useState(false);
   const [syncMsg, setSyncMsg] = useState<string | null>(null);
   const [syncError, setSyncError] = useState<string | null>(null);
+  // On garde l'objet criteres complet (pas seulement le booleen du digest) :
+  // l'API PUT /api/criteria remplace toutes les valeurs envoyees, un objet
+  // partiel ecraserait silencieusement les autres criteres deja enregistres.
+  const [criteria, setCriteria] = useState<Record<string, unknown> | null>(null);
+  const [savingDigest, setSavingDigest] = useState(false);
 
   function load() {
     fetch("/api/gmail/status")
@@ -34,9 +39,25 @@ function IntegrationsContent() {
         setStatus(data);
         setLoading(false);
       });
+    fetch("/api/criteria")
+      .then((r) => r.json())
+      .then((data) => setCriteria(data.criteria ?? {}));
   }
 
   useEffect(load, []);
+
+  async function handleDigestToggle(enabled: boolean) {
+    if (!criteria) return;
+    setSavingDigest(true);
+    const next = { ...criteria, emailDigestEnabled: enabled };
+    setCriteria(next);
+    await fetch("/api/criteria", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(next),
+    });
+    setSavingDigest(false);
+  }
 
   const gmailConnectedParam = searchParams.get("gmail_connected");
   const gmailErrorParam = searchParams.get("gmail_error");
@@ -132,6 +153,27 @@ function IntegrationsContent() {
             </div>
             {syncMsg && <p className="text-sm text-green-700">{syncMsg}</p>}
             {syncError && <p className="text-sm text-red-600">{syncError}</p>}
+
+            <div className="pt-4 border-t border-slate-100">
+              <label className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  className="h-4 w-4"
+                  checked={Boolean(criteria?.emailDigestEnabled)}
+                  disabled={savingDigest || !criteria}
+                  onChange={(e) => handleDigestToggle(e.target.checked)}
+                />
+                <span className="text-sm text-slate-700">
+                  Recevoir un email (via Gmail) apres chaque recuperation automatique listant les nouvelles offres a
+                  fort potentiel
+                </span>
+              </label>
+              <p className="text-xs text-slate-400 mt-1">
+                Necessite la permission d&apos;envoi Gmail. Si tu as connecte Gmail avant l&apos;ajout de cette
+                fonctionnalite, deconnecte puis reconnecte ton compte pour l&apos;accorder (Google ne l&apos;ajoute
+                pas retroactivement a une connexion existante).
+              </p>
+            </div>
           </div>
         )}
       </section>

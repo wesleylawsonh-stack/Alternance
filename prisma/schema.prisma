@@ -58,6 +58,7 @@ model Criteria {
   radiusKm        Int?
   searchDescription String? // texte libre : ce que l'utilisateur recherche, utilise pour affiner le score et l'adaptation de CV
   autoFetchEnabled Boolean @default(true) // recuperation automatique (cron) activee/desactivee
+  emailDigestEnabled Boolean @default(false) // envoie un email (via Gmail) apres chaque recuperation automatique listant les nouvelles offres a fort potentiel. Necessite un compte Gmail connecte avec la permission d'envoi (scope gmail.send) - desactive par defaut car ca demande de reconnecter Gmail.
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 }

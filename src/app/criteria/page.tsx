@@ -16,6 +16,7 @@ type Criteria = {
   radiusKm: number | null;
   searchDescription: string;
   autoFetchEnabled: boolean;
+  emailDigestEnabled: boolean;
 };
 
 const EMPTY: Criteria = {
@@ -29,6 +30,7 @@ const EMPTY: Criteria = {
   radiusKm: null,
   searchDescription: "",
   autoFetchEnabled: true,
+  emailDigestEnabled: false,
 };
 
 const CONTRACT_OPTIONS = ["Alternance", "Stage", "CDI", "CDD", "Interim"];
@@ -65,6 +67,7 @@ export default function CriteriaPage() {
             radiusKm: data.criteria.radiusKm,
             searchDescription: data.criteria.searchDescription ?? "",
             autoFetchEnabled: data.criteria.autoFetchEnabled ?? true,
+            emailDigestEnabled: !!data.criteria.emailDigestEnabled,
           });
         }
         setLoading(false);

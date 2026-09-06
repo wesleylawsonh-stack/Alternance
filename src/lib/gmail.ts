@@ -5,7 +5,14 @@
 import { gmail as gmailClient, auth } from "@googleapis/gmail";
 import { prisma } from "./db";
 
-const SCOPES = ["https://www.googleapis.com/auth/gmail.readonly"];
+// gmail.send est necessaire pour le digest d'offres (voir emailDigest.ts) :
+// un compte deja connecte avant l'ajout de ce scope doit etre reconnecte
+// (bouton "Deconnecter" puis "Connecter Gmail") pour l'obtenir - Google ne
+// l'accorde pas retroactivement a un token deja emis.
+const SCOPES = [
+  "https://www.googleapis.com/auth/gmail.readonly",
+  "https://www.googleapis.com/auth/gmail.send",
+];
 
 export function isGmailConfigured(): boolean {
   return Boolean(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET && process.env.GOOGLE_REDIRECT_URI);
@@ -99,6 +106,42 @@ export async function getAuthorizedGmailClient() {
   });
 
   return client;
+}
+
+function encodeBase64Url(data: string): string {
+  return Buffer.from(data, "utf-8")
+    .toString("base64")
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/, "");
+}
+
+/**
+ * Envoie un email au format HTML via l'API Gmail (necessite le scope
+ * gmail.send - voir SCOPES ci-dessus). Le sujet est encode en RFC 2047
+ * (mot encode) pour supporter les accents.
+ */
+export async function sendGmailMessage(
+  client: Awaited<ReturnType<typeof getAuthorizedGmailClient>>,
+  params: { to: string; subject: string; html: string }
+): Promise<void> {
+  if (!client) throw new Error("Compte Gmail non connecte.");
+  const gmail = gmailClient({ version: "v1", auth: client });
+
+  const encodedSubject = `=?UTF-8?B?${Buffer.from(params.subject, "utf-8").toString("base64")}?=`;
+  const message = [
+    `To: ${params.to}`,
+    `Subject: ${encodedSubject}`,
+    "MIME-Version: 1.0",
+    "Content-Type: text/html; charset=UTF-8",
+    "",
+    params.html,
+  ].join("\r\n");
+
+  await gmail.users.messages.send({
+    userId: "me",
+    requestBody: { raw: encodeBase64Url(message) },
+  });
 }
 
 export type GmailMessage = {

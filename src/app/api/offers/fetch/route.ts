@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
+import type { Offer } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { computeWeightedMatch, buildMatchCriteria, matchResultToOfferData } from "@/lib/matching";
 import { asStringArray, asObject } from "@/lib/json";
 import { fetchAllExternalOffers, isAnySourceConfigured } from "@/lib/offerSources";
 import { computeOfferContentHash } from "@/lib/contentHash";
+import { sendOfferDigest } from "@/lib/emailDigest";
 
 const EMPTY_SECTIONS = { summary: null, experiences: [] as string[], education: [] as string[], languages: [] as string[] };
 
@@ -79,6 +81,7 @@ export async function POST(req: NextRequest) {
 
   let created = 0;
   let skipped = 0;
+  const digestOffers: Offer[] = [];
 
   for (const ext of externalOffers) {
     const contentHash = computeOfferContentHash(ext.title, ext.company, ext.description);
@@ -103,7 +106,7 @@ export async function POST(req: NextRequest) {
       matchCriteria
     );
 
-    await prisma.offer.create({
+    const offer = await prisma.offer.create({
       data: {
         title: ext.title,
         company: ext.company,
@@ -120,6 +123,13 @@ export async function POST(req: NextRequest) {
       },
     });
     created++;
+    if (offer.recommendation === "POSTULER" || offer.recommendation === "CONSIDERER") {
+      digestOffers.push(offer);
+    }
+  }
+
+  if (criteria?.emailDigestEnabled && digestOffers.length > 0) {
+    await sendOfferDigest(digestOffers, req.nextUrl.origin);
   }
 
   return NextResponse.json({
