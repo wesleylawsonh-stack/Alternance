@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Menu, X } from "lucide-react";
+import { Menu, X, GraduationCap } from "lucide-react";
 
 const LINKS = [
   { href: "/", label: "Accueil" },
@@ -39,7 +39,10 @@ export default function Nav() {
   return (
     <header className="border-b border-slate-200 bg-white">
       <div className="mx-auto max-w-5xl px-4 py-3 flex items-center justify-between">
-        <Link href="/" className="font-semibold text-brand-700 text-lg">
+        <Link href="/" className="flex items-center gap-2 font-semibold text-brand-700 text-lg">
+          <span className="flex items-center justify-center w-8 h-8 rounded-lg bg-brand-600 text-white shrink-0">
+            <GraduationCap className="w-[18px] h-[18px]" strokeWidth={2} />
+          </span>
           MonAlternance
         </Link>
         <div className="flex items-center gap-3">
