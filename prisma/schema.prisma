@@ -60,6 +60,7 @@ model Criteria {
   autoFetchEnabled Boolean @default(true) // recuperation automatique (cron) activee/desactivee
   emailDigestEnabled Boolean @default(false) // envoie un email (via Gmail) apres chaque recuperation automatique listant les nouvelles offres a fort potentiel. Necessite un compte Gmail connecte avec la permission d'envoi (scope gmail.send) - desactive par defaut car ca demande de reconnecter Gmail.
   mandatoryCriteria String? // texte libre decrivant un critere obligatoire (ex: "dimension internationale") verifie par l'IA (titre+missions+entreprise) sur chaque nouvelle offre, avec repli par mots-cles si l'IA n'est pas configuree - voir ai.ts#checkMandatoryCriteria
+  autoApplyEnabled Boolean @default(false) // prepare automatiquement (CV adapte + message de candidature) une ApplicationDraft pour les offres "POSTULER" ayant un canal de candidature detecte (email ou lien web) - jamais d'envoi sans validation explicite, voir autoApply.ts
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 }
@@ -89,12 +90,32 @@ model Offer {
   mandatoryCriteriaMet Boolean? // resultat de la verification du critere obligatoire (Criteria.mandatoryCriteria) au moment de la recuperation ; null = aucun critere obligatoire defini a ce moment-la (jamais recalcule retroactivement, voir README)
   applicationStatus    String    @default("NOT_APPLIED") // NOT_APPLIED | APPLIED | INTERVIEW | OFFER | REJECTED
   comments             String? // notes libres + journal des mises a jour automatiques (Gmail)
+  autoApplyChecked     Boolean   @default(false) // true des qu'une tentative de preparation automatique de candidature a ete faite pour cette offre (candidature preparee OU determine qu'il n'y avait rien a faire - pas de CV, pas de canal de candidature detecte) ; jamais remis a false, evite de retraiter la meme offre a chaque lot - voir autoApply.ts
   postedAt             DateTime?
   fetchedAt            DateTime  @default(now())
   createdAt            DateTime  @default(now())
   updatedAt            DateTime  @updatedAt
 
-  processedEmails ProcessedEmail[]
+  processedEmails  ProcessedEmail[]
+  applicationDraft ApplicationDraft?
+}
+
+// Candidature preparee automatiquement (CV adapte + message) pour une
+// offre, en attente de validation explicite de l'utilisateur avant tout
+// envoi reel - voir autoApply.ts. Jamais d'envoi silencieux : le statut ne
+// passe a SENT que suite a une action explicite (bouton "Envoyer"/"Marquer
+// comme envoyee" dans l'interface).
+model ApplicationDraft {
+  id           String    @id @default(cuid())
+  offerId      String    @unique
+  offer        Offer     @relation(fields: [offerId], references: [id], onDelete: Cascade)
+  cvVersionId  String // CvVersion (OFFER_ADAPTED) generee pour cette candidature
+  messageText  String
+  applyChannel String // EMAIL (envoi via Gmail possible depuis l'appli) | WEB (candidature externe, ouverture du lien + confirmation manuelle)
+  applyTarget  String // adresse email ou URL, selon applyChannel
+  status       String    @default("PENDING") // PENDING | SENT | DISMISSED
+  createdAt    DateTime  @default(now())
+  sentAt       DateTime?
 }
 
 // Singleton row (id is always "singleton") : compte Gmail connecte en OAuth

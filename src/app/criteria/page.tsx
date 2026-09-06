@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import SearchProfileChat from "@/components/SearchProfileChat";
 import LocationInput from "@/components/LocationInput";
 import LocationMap from "@/components/LocationMap";
@@ -18,6 +19,7 @@ type Criteria = {
   autoFetchEnabled: boolean;
   emailDigestEnabled: boolean;
   mandatoryCriteria: string;
+  autoApplyEnabled: boolean;
 };
 
 const EMPTY: Criteria = {
@@ -33,6 +35,7 @@ const EMPTY: Criteria = {
   autoFetchEnabled: true,
   emailDigestEnabled: false,
   mandatoryCriteria: "",
+  autoApplyEnabled: false,
 };
 
 const CONTRACT_OPTIONS = ["Alternance", "Stage", "CDI", "CDD", "Interim"];
@@ -73,6 +76,7 @@ export default function CriteriaPage() {
             autoFetchEnabled: data.criteria.autoFetchEnabled ?? true,
             emailDigestEnabled: !!data.criteria.emailDigestEnabled,
             mandatoryCriteria: data.criteria.mandatoryCriteria ?? "",
+            autoApplyEnabled: !!data.criteria.autoApplyEnabled,
           });
         }
         setLoading(false);
@@ -302,6 +306,29 @@ export default function CriteriaPage() {
           <p className="text-xs text-slate-400 mt-1">
             Frequence : quotidienne (limite du plan Vercel Hobby). Tu peux toujours declencher une
             recuperation manuelle a tout moment depuis la page Offres, meme si cette option est desactivee.
+          </p>
+        </div>
+
+        <div className="pt-2 border-t border-slate-100">
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              id="autoApply"
+              checked={criteria.autoApplyEnabled}
+              onChange={(e) => setCriteria({ ...criteria, autoApplyEnabled: e.target.checked })}
+              className="h-4 w-4"
+            />
+            <label htmlFor="autoApply" className="text-sm text-slate-700">
+              Preparer automatiquement mes candidatures (CV adapte + message) pour les offres a fort potentiel
+            </label>
+          </div>
+          <p className="text-xs text-slate-400 mt-1">
+            Pour chaque nouvelle offre recommandee &quot;A postuler&quot; avec un canal de candidature detecte (email
+            ou lien externe), un CV adapte et un message de candidature sont generes automatiquement et ajoutes a la{" "}
+            <Link href="/applications" className="text-brand-600 hover:underline">
+              file d&apos;attente de candidatures
+            </Link>
+            . Rien n&apos;est jamais envoye automatiquement : chaque candidature attend ta validation.
           </p>
         </div>
 

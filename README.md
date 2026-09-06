@@ -130,6 +130,30 @@ d'emploi/alternance :
 - **Digest email** (optionnel, page Intégrations) : envoie un email (via
   Gmail) après chaque récupération automatique listant les nouvelles offres
   à fort potentiel (recommandation "À postuler"/"À considérer").
+- **Candidatures automatisées** (optionnel, page Critères puis page
+  "Candidatures") : pour chaque nouvelle offre recommandée "À postuler"
+  avec un canal de candidature détecté, prépare automatiquement un CV
+  adapté (édition IA avec acceptation automatique de toutes les
+  propositions, mêmes garde-fous anti-invention que l'éditeur manuel) et un
+  message de candidature, puis les place dans une **file d'attente à
+  valider** (page `/applications`) — **rien n'est jamais envoyé
+  automatiquement**, chaque candidature attend une action explicite.
+  Détection du canal (`src/lib/applyChannel.ts`) : un lien `mailto:` fourni
+  par la source fait foi directement ; à défaut, une adresse email trouvée
+  dans la description à proximité d'un mot-clé de candidature (moins fiable,
+  raison de plus pour toujours valider avant envoi) ; sinon le lien de
+  l'offre elle-même (candidature externe). Deux actions possibles depuis la
+  file d'attente : "Envoyer par email" (envoi réel via Gmail avec le CV en
+  pièce jointe — nécessite le scope `gmail.send`, voir Synchronisation
+  Gmail) ou "Ouvrir l'offre" + "Marquer comme envoyée" (candidature externe,
+  postulée manuellement sur le site d'origine). Traité par lots de 8 côté
+  serveur (bouton "Préparer les candidatures", même principe que la
+  réévaluation du critère obligatoire) pour éviter un pic d'appels IA d'un
+  coup. On ne construit volontairement **pas** de bot de remplissage
+  automatique de formulaires sur des sites tiers : fragile (chaque site a sa
+  propre structure), contraire aux conditions d'utilisation de la plupart
+  des plateformes de recrutement (LinkedIn Easy Apply notamment), et risqué
+  pour le compte de l'utilisateur.
 
 ## Stack technique
 
@@ -384,6 +408,8 @@ src/lib/
   ai.ts                      Decoupage du CV en sections, propositions d'edition,
                                notation, classification d'emails (IA ou fallback)
   cvVersion.ts                Application des decisions accepter/modifier/refuser + nommage des versions
+  applyChannel.ts              Detection du canal de candidature (email/web) a partir d'une offre
+  autoApply.ts                 Preparation automatique d'une candidature (CV adapte + message), sans envoi
   franceTravail.ts           Adaptateur API France Travail
   adzuna.ts                   Adaptateur API Adzuna
   labonnealternance.ts        Adaptateur API La bonne alternance

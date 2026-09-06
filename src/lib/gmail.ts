@@ -116,27 +116,49 @@ function encodeBase64Url(data: string): string {
     .replace(/=+$/, "");
 }
 
+export type GmailAttachment = { filename: string; mimeType: string; content: Buffer };
+
 /**
  * Envoie un email au format HTML via l'API Gmail (necessite le scope
  * gmail.send - voir SCOPES ci-dessus). Le sujet est encode en RFC 2047
- * (mot encode) pour supporter les accents.
+ * (mot encode) pour supporter les accents. Une piece jointe optionnelle
+ * (ex: CV en PDF) est ajoutee via un message MIME multipart/mixed.
  */
 export async function sendGmailMessage(
   client: Awaited<ReturnType<typeof getAuthorizedGmailClient>>,
-  params: { to: string; subject: string; html: string }
+  params: { to: string; subject: string; html: string; attachment?: GmailAttachment }
 ): Promise<void> {
   if (!client) throw new Error("Compte Gmail non connecte.");
   const gmail = gmailClient({ version: "v1", auth: client });
 
   const encodedSubject = `=?UTF-8?B?${Buffer.from(params.subject, "utf-8").toString("base64")}?=`;
-  const message = [
-    `To: ${params.to}`,
-    `Subject: ${encodedSubject}`,
-    "MIME-Version: 1.0",
-    "Content-Type: text/html; charset=UTF-8",
-    "",
-    params.html,
-  ].join("\r\n");
+  const headers = [`To: ${params.to}`, `Subject: ${encodedSubject}`, "MIME-Version: 1.0"];
+
+  let message: string;
+  if (params.attachment) {
+    const boundary = `mixed_${crypto.randomUUID().replace(/-/g, "")}`;
+    const base64Content = params.attachment.content.toString("base64").replace(/(.{76})/g, "$1\r\n");
+    message = [
+      ...headers,
+      `Content-Type: multipart/mixed; boundary="${boundary}"`,
+      "",
+      `--${boundary}`,
+      "Content-Type: text/html; charset=UTF-8",
+      "",
+      params.html,
+      "",
+      `--${boundary}`,
+      `Content-Type: ${params.attachment.mimeType}; name="${params.attachment.filename}"`,
+      `Content-Disposition: attachment; filename="${params.attachment.filename}"`,
+      "Content-Transfer-Encoding: base64",
+      "",
+      base64Content,
+      "",
+      `--${boundary}--`,
+    ].join("\r\n");
+  } else {
+    message = [...headers, "Content-Type: text/html; charset=UTF-8", "", params.html].join("\r\n");
+  }
 
   await gmail.users.messages.send({
     userId: "me",
