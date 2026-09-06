@@ -18,6 +18,7 @@ export async function GET(req: NextRequest) {
   const source = params.get("source");
   const postedAfter = params.get("postedAfter");
   const hideLowMatch = params.get("hideLowMatch") === "true";
+  const mandatoryCriteria = params.get("mandatoryCriteria");
 
   // Chaque filtre "OR" (date, recommandation) est pousse comme sa propre
   // entree d'un tableau AND plutot que d'ecrire directement where.OR, pour
@@ -51,6 +52,9 @@ export async function GET(req: NextRequest) {
     // explicitement visibles plutot que de les masquer par erreur.
     and.push({ OR: [{ recommendation: { not: "IGNORER" } }, { recommendation: null }] });
   }
+
+  if (mandatoryCriteria === "MET") and.push({ mandatoryCriteriaMet: true });
+  else if (mandatoryCriteria === "NOT_MET") and.push({ mandatoryCriteriaMet: false });
 
   const where = and.length > 0 ? { AND: and } : {};
 

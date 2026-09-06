@@ -30,7 +30,13 @@ d'emploi/alternance :
   (pour éviter un pic d'appels IA au moindre changement de critères) :
   utilise le bouton "Réévaluer les offres déjà récupérées" (page Critères,
   sous ce champ) pour les rattraper — traite par lots de 15 côté serveur,
-  le bouton relance l'appel jusqu'à ce qu'il n'en reste plus.
+  le bouton relance l'appel jusqu'à ce qu'il n'en reste plus. Un filtre
+  dédié ("Correspond au critère obligatoire" / "Ne correspond pas...") est
+  disponible sur la page Offres.
+- **Application installable (PWA)** : sur mobile (Chrome/Android, Safari/iOS
+  via "Ajouter à l'écran d'accueil"), le site peut être installé comme une
+  app avec sa propre icône. Aucun mode hors-ligne (les données doivent
+  toujours être à jour) — juste l'installabilité.
 - **Discussion avec l'IA** (bouton "Discuter avec l'IA pour préciser ma
   recherche", page Critères) : une conversation guidée par Claude qui pose
   des questions une par une (métier visé, secteur, localisation, parcours

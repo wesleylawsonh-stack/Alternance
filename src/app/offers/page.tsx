@@ -46,6 +46,7 @@ type Filters = {
   source: string;
   days: string;
   hideLowMatch: boolean;
+  mandatoryCriteria: string;
 };
 
 // Par defaut, masque les offres refusees/ignorees ("status: ACTIVE") et
@@ -59,7 +60,14 @@ const DEFAULT_FILTERS: Filters = {
   source: "ALL",
   days: "",
   hideLowMatch: true,
+  mandatoryCriteria: "ALL",
 };
+
+const MANDATORY_CRITERIA_OPTIONS = [
+  { value: "ALL", label: "Critere obligatoire : peu importe" },
+  { value: "MET", label: "Correspond au critere obligatoire" },
+  { value: "NOT_MET", label: "Ne correspond pas au critere obligatoire" },
+];
 
 const STATUS_FILTER_OPTIONS: Array<{ value: string; label: string }> = [
   { value: "ACTIVE", label: "Statuts actifs (masque refusees/ignorees)" },
@@ -83,6 +91,7 @@ export default function OffersPage() {
     if (filters.status !== "ALL") params.set("status", filters.status);
     if (filters.source !== "ALL") params.set("source", filters.source);
     if (filters.hideLowMatch) params.set("hideLowMatch", "true");
+    if (filters.mandatoryCriteria !== "ALL") params.set("mandatoryCriteria", filters.mandatoryCriteria);
     if (filters.days) {
       const d = new Date();
       d.setDate(d.getDate() - Number(filters.days));
@@ -221,11 +230,22 @@ export default function OffersPage() {
             ))}
           </select>
           <select
-            className="input sm:col-span-3 lg:col-span-1"
+            className="input"
             value={filters.status}
             onChange={(e) => setFilters({ ...filters, status: e.target.value })}
           >
             {STATUS_FILTER_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+          </select>
+          <select
+            className="input sm:col-span-2 lg:col-span-1"
+            value={filters.mandatoryCriteria}
+            onChange={(e) => setFilters({ ...filters, mandatoryCriteria: e.target.value })}
+          >
+            {MANDATORY_CRITERIA_OPTIONS.map((o) => (
               <option key={o.value} value={o.value}>
                 {o.label}
               </option>
