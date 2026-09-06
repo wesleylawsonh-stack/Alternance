@@ -52,6 +52,8 @@ export default function CriteriaPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [savedMsg, setSavedMsg] = useState<string | null>(null);
+  const [rescanning, setRescanning] = useState(false);
+  const [rescanMsg, setRescanMsg] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("/api/criteria")
@@ -99,6 +101,28 @@ export default function CriteriaPage() {
     setSaving(false);
     setSavedMsg(`Criteres enregistres. ${data.updatedOffers ?? 0} offre(s) recalculee(s).`);
     setTimeout(() => setSavedMsg(null), 4000);
+  }
+
+  // Rattrape les offres deja en base qui n'ont jamais ete confrontees au
+  // critere obligatoire (ex: offres recuperees avant qu'il soit defini, ou
+  // "deja connues" lors des recuperations suivantes donc jamais
+  // reevaluees). Traite par lots cote serveur (voir rescan-mandatory) ;
+  // on rappelle simplement la route jusqu'a ce qu'il n'en reste plus.
+  async function handleRescan() {
+    setRescanning(true);
+    setRescanMsg(null);
+    let total = 0;
+    for (;;) {
+      const res = await fetch("/api/offers/rescan-mandatory", { method: "POST" });
+      const data = await res.json();
+      const processed = data.processed ?? 0;
+      total += processed;
+      setRescanMsg(`${total} offre(s) reevaluee(s)...`);
+      if (processed === 0 || (data.remaining ?? 0) === 0) break;
+    }
+    setRescanning(false);
+    setRescanMsg(total > 0 ? `${total} offre(s) reevaluee(s) avec le critere obligatoire.` : "Aucune offre a reevaluer.");
+    setTimeout(() => setRescanMsg(null), 6000);
   }
 
   if (loading) return <p className="text-slate-500">Chargement...</p>;
@@ -244,10 +268,22 @@ export default function CriteriaPage() {
           />
           <p className="text-xs text-slate-400 mt-1">
             Verifie par l&apos;IA (titre, missions et description de l&apos;entreprise) sur chaque nouvelle offre
-            recuperee - une offre qui n&apos;y correspond pas est fortement penalisee. Ne s&apos;applique qu&apos;aux
-            offres recuperees APRES avoir defini ce critere (pas de recalcul retroactif). Sans cle IA configuree,
-            repli sur une simple recherche de mots-cles (moins fiable).
+            recuperee - une offre qui n&apos;y correspond pas est fortement penalisee. Sans cle IA configuree, repli
+            sur une simple recherche de mots-cles (moins fiable).
           </p>
+          {criteria.mandatoryCriteria.trim() && (
+            <div className="mt-2">
+              <button type="button" className="btn-secondary text-sm" onClick={handleRescan} disabled={rescanning}>
+                {rescanning ? "Reevaluation en cours..." : "Reevaluer les offres deja recuperees"}
+              </button>
+              <p className="text-xs text-slate-400 mt-1">
+                A utiliser apres avoir defini/modifie ce critere : les offres deja en base (recuperees avant, ou
+                retrouvees &quot;deja connues&quot; lors des recherches suivantes) ne sont jamais reevaluees
+                automatiquement.
+              </p>
+              {rescanMsg && <p className="text-sm text-green-700 mt-1">{rescanMsg}</p>}
+            </div>
+          )}
         </div>
 
         <div className="pt-2 border-t border-slate-100">

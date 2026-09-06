@@ -25,9 +25,12 @@ d'emploi/alternance :
   analysé par l'IA (titre, missions, description de l'entreprise) sur
   chaque nouvelle offre récupérée — une offre qui n'y correspond pas est
   fortement pénalisée (recommandation "Ignorer"). Repli sur une recherche
-  de mots-clés si l'IA n'est pas configurée. S'applique uniquement aux
-  offres récupérées après avoir défini le critère (pas de recalcul
-  rétroactif sur les offres déjà en base, pour éviter un pic d'appels IA).
+  de mots-clés si l'IA n'est pas configurée. Les offres déjà en base au
+  moment où le critère est défini ne sont pas réanalysées automatiquement
+  (pour éviter un pic d'appels IA au moindre changement de critères) :
+  utilise le bouton "Réévaluer les offres déjà récupérées" (page Critères,
+  sous ce champ) pour les rattraper — traite par lots de 15 côté serveur,
+  le bouton relance l'appel jusqu'à ce qu'il n'en reste plus.
 - **Discussion avec l'IA** (bouton "Discuter avec l'IA pour préciser ma
   recherche", page Critères) : une conversation guidée par Claude qui pose
   des questions une par une (métier visé, secteur, localisation, parcours
