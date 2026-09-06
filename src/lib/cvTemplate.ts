@@ -114,6 +114,78 @@ function drawCircularImage(page: PDFPage, image: PDFImage, opts: { x: number; y:
   page.pushOperators(popGraphicsState());
 }
 
+const PDF_TEXT_REPLACEMENTS: Record<string, string> = {
+  "‘": "'",
+  "’": "'",
+  "‚": ",",
+  "“": '"',
+  "”": '"',
+  "„": '"',
+  "–": "-",
+  "—": "-",
+  "…": "...",
+  " ": " ",
+};
+
+/**
+ * Les polices standard (Helvetica) utilisees ici n'encodent que
+ * WinAnsiEncoding (~Latin-1 + quelques symboles typographiques) : un
+ * caractere hors de cet ensemble (emoji, ecriture non latine...) fait
+ * planter pdf-lib avec une exception non rattrapable au niveau de
+ * page.drawText/font.widthOfTextAtSize. Comme le contenu adapte par l'IA
+ * peut provenir de descriptions d'offres externes (donc de texte non
+ * maitrise), on normalise d'abord les caracteres typographiques courants
+ * (guillemets courbes, tirets longs...) puis on retire silencieusement
+ * tout caractere encore non encodable, plutot que de faire planter la
+ * generation du PDF.
+ */
+export function sanitizeTextForPdf(text: string, font: PDFFont): string {
+  let normalized = text;
+  for (const [from, to] of Object.entries(PDF_TEXT_REPLACEMENTS)) {
+    normalized = normalized.split(from).join(to);
+  }
+
+  try {
+    font.widthOfTextAtSize(normalized, 10);
+    return normalized;
+  } catch {
+    let result = "";
+    for (const ch of normalized) {
+      try {
+        font.widthOfTextAtSize(ch, 10);
+        result += ch;
+      } catch {
+        // Caractere non supporte par la police : ignore plutot que de
+        // planter la generation du PDF.
+      }
+    }
+    return result;
+  }
+}
+
+function sanitizeCvContent(content: CvContent, font: PDFFont): CvContent {
+  const s = (text: string) => sanitizeTextForPdf(text, font);
+  return {
+    headline: content.headline ? s(content.headline) : null,
+    summary: content.summary ? s(content.summary) : null,
+    skills: content.skills.map(s),
+    experiences: content.experiences.map(s),
+    education: content.education.map(s),
+    languages: content.languages.map(s),
+  };
+}
+
+function sanitizeCvContact(contact: CvContact, font: PDFFont): CvContact {
+  const s = (text: string) => sanitizeTextForPdf(text, font);
+  return {
+    fullName: contact.fullName ? s(contact.fullName) : null,
+    email: contact.email ? s(contact.email) : null,
+    phone: contact.phone ? s(contact.phone) : null,
+    location: contact.location ? s(contact.location) : null,
+    linkedin: contact.linkedin ? s(contact.linkedin) : null,
+  };
+}
+
 function wrapText(text: string, font: PDFFont, size: number, maxWidth: number): string[] {
   const words = text.split(/\s+/).filter(Boolean);
   const lines: string[] = [];
@@ -187,10 +259,21 @@ export function cvContentFromProfile(profile: {
   };
 }
 
-export async function renderCvPdf(content: CvContent, contact: CvContact, photo?: CvPhoto | null): Promise<Uint8Array> {
+export async function renderCvPdf(
+  rawContent: CvContent,
+  rawContact: CvContact,
+  photo?: CvPhoto | null
+): Promise<Uint8Array> {
   const doc = await PDFDocument.create();
   const font = await doc.embedFont(StandardFonts.Helvetica);
   const boldFont = await doc.embedFont(StandardFonts.HelveticaBold);
+
+  // Le contenu peut provenir de descriptions d'offres externes ou de texte
+  // genere par l'IA : on le nettoie des caracteres que la police standard
+  // ne sait pas encoder (voir sanitizeTextForPdf) avant tout dessin, pour
+  // ne jamais faire planter la generation du PDF.
+  const content = sanitizeCvContent(rawContent, font);
+  const contact = sanitizeCvContact(rawContact, font);
 
   let page = doc.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
   let y = PAGE_HEIGHT;
