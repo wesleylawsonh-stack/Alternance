@@ -1,0 +1,85 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+body {
+  background-color: #f8fafc;
+  color: #0f172a;
+}
+
+/* Respecte les preferences d'accessibilite : desactive les animations pour
+   qui a demande "reduced motion", plutot que d'imposer du mouvement. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+.card {
+  @apply bg-white rounded-xl border border-slate-200 shadow-sm transition-shadow duration-200;
+}
+
+/* A poser en plus de .card sur une carte cliquable/deplacable (offre,
+   candidature...) : leger relief au survol, jamais sur les cartes
+   purement informatives pour ne pas laisser croire qu'elles sont
+   interactives. */
+.card-interactive {
+  @apply hover:shadow-md hover:border-slate-300 active:shadow-sm;
+}
+
+.btn {
+  @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2;
+}
+
+.btn-primary {
+  @apply btn bg-brand-600 text-white shadow-sm hover:bg-brand-700 hover:shadow focus-visible:ring-brand-500;
+}
+
+.btn-secondary {
+  @apply btn bg-slate-100 text-slate-700 hover:bg-slate-200 focus-visible:ring-slate-400;
+}
+
+.btn-danger {
+  @apply btn bg-red-50 text-red-700 hover:bg-red-100 focus-visible:ring-red-400;
+}
+
+.input {
+  @apply w-full rounded-lg border border-slate-300 px-3 py-2 text-sm transition-colors duration-150 hover:border-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500;
+}
+
+.label {
+  @apply block text-sm font-medium text-slate-700 mb-1;
+}
+
+/* Squelette de chargement (voir components/Skeleton.tsx) : degrade anime
+   plutot qu'un aplat statique, pour donner un signal clair de "ca charge"
+   sans dependance externe (pure CSS). */
+@keyframes skeleton-shimmer {
+  0% { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+}
+
+.skeleton {
+  @apply rounded-md bg-slate-200;
+  background-image: linear-gradient(90deg, #e2e8f0 0px, #f1f5f9 40px, #e2e8f0 80px);
+  background-size: 600px 100%;
+  animation: skeleton-shimmer 1.4s ease-in-out infinite;
+}
+
+/* Entree douce du contenu de page (voir layout.tsx) : evite le "pop" brut
+   au changement de route sans etre une transition de page a part entiere. */
+@keyframes page-enter {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.page-enter {
+  animation: page-enter 0.25s ease-out;
+}

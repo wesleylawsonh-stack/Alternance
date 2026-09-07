@@ -1,0 +1,146 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Singleton row (id is always "singleton") holding the user's profile + CV.
+model Profile {
+  id         String   @id @default("singleton")
+  fullName   String?
+  email      String?
+  phone      String?
+  location   String?
+  headline   String?
+  summary    String?
+  linkedin   String?
+  photoUrl   String? // photo de profil (Vercel Blob, URL a suffixe aleatoire non devinable), si configure
+  cvFileName String?
+  cvFileUrl  String? // fichier PDF original tel qu'importe (Vercel Blob), si configure
+  cvRawText  String?
+  cvSkills   String? // JSON string[]
+  cvSections String? // JSON { experiences: [...], education: [...], languages: [...] }
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  cvVersions CvVersion[]
+}
+
+// Version de CV generee (amelioration generale ou adaptation a une offre
+// precise). Le CV "original" n'a pas d'entree ici : il est represente par
+// Profile.cvFileUrl (fichier importe) / Profile.cvRawText (texte extrait).
+model CvVersion {
+  id           String   @id @default(cuid())
+  profileId    String   @default("singleton")
+  profile      Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  kind         String // IMPROVED | OFFER_ADAPTED
+  label        String // ex: "CV_Loreal_BusinessDeveloper"
+  offerId      String?
+  offerTitle   String? // instantane : reste lisible meme si l'offre est supprimee
+  offerCompany String?
+  content      String // JSON structure (headline, summary, skills[], experiences[], education[], languages[])
+  createdAt    DateTime @default(now())
+}
+
+// Singleton row (id is always "singleton") holding job-search criteria.
+model Criteria {
+  id              String   @id @default("singleton")
+  jobTitles       String? // JSON string[]
+  locations       String? // JSON string[]
+  contractTypes   String? // JSON string[] e.g. ["Alternance", "Stage"]
+  remote          Boolean  @default(false)
+  keywords        String? // JSON string[] must-have keywords boosting the score
+  excludeKeywords String? // JSON string[] keywords that disqualify an offer
+  minSalary       Int?
+  radiusKm        Int?
+  searchDescription String? // texte libre : ce que l'utilisateur recherche, utilise pour affiner le score et l'adaptation de CV
+  autoFetchEnabled Boolean @default(true) // recuperation automatique (cron) activee/desactivee
+  emailDigestEnabled Boolean @default(false) // envoie un email (via Gmail) apres chaque recuperation automatique listant les nouvelles offres a fort potentiel. Necessite un compte Gmail connecte avec la permission d'envoi (scope gmail.send) - desactive par defaut car ca demande de reconnecter Gmail.
+  mandatoryCriteria String? // texte libre decrivant un critere obligatoire (ex: "dimension internationale") verifie par l'IA (titre+missions+entreprise) sur chaque nouvelle offre, avec repli par mots-cles si l'IA n'est pas configuree - voir ai.ts#checkMandatoryCriteria
+  autoApplyEnabled Boolean @default(false) // prepare automatiquement (CV adapte + message de candidature) une ApplicationDraft pour les offres "POSTULER" ayant un canal de candidature detecte (email ou lien web) - jamais d'envoi sans validation explicite, voir autoApply.ts
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model Offer {
+  id                   String    @id @default(cuid())
+  title                String
+  company              String?
+  companyLogoUrl       String? // logo de l'entreprise si fourni par la source
+  location             String?
+  url                  String?
+  description          String
+  contractType         String?
+  source               String    @default("manual") // manual | france_travail | adzuna
+  externalId           String?   @unique
+  contentHash          String? // empreinte du contenu normalise (titre+entreprise+description), pour deduplication inter-sources
+  requiredSkills       String? // JSON string[] extracted from the description
+  matchScore           Float? // 0-100
+  matchedSkills        String? // JSON string[]
+  missingSkills        String? // JSON string[]
+  strengths            String? // JSON string[] points forts du matching
+  weaknesses           String? // JSON string[] points faibles du matching
+  criteriaRespected    String? // JSON string[] ex: ["Type de contrat", "Localisation"]
+  criteriaNotRespected String? // JSON string[]
+  mainReason           String? // raison principale du score
+  recommendation       String? // POSTULER | CONSIDERER | FAIBLE | IGNORER
+  mandatoryCriteriaMet Boolean? // resultat de la verification du critere obligatoire (Criteria.mandatoryCriteria) au moment de la recuperation ; null = aucun critere obligatoire defini a ce moment-la (jamais recalcule retroactivement, voir README)
+  applicationStatus    String    @default("NOT_APPLIED") // NOT_APPLIED | APPLIED | INTERVIEW | OFFER | REJECTED
+  comments             String? // notes libres + journal des mises a jour automatiques (Gmail)
+  autoApplyChecked     Boolean   @default(false) // true des qu'une tentative de preparation automatique de candidature a ete faite pour cette offre (candidature preparee OU determine qu'il n'y avait rien a faire - pas de CV, pas de canal de candidature detecte) ; jamais remis a false, evite de retraiter la meme offre a chaque lot - voir autoApply.ts
+  postedAt             DateTime?
+  fetchedAt            DateTime  @default(now())
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  processedEmails  ProcessedEmail[]
+  applicationDraft ApplicationDraft?
+}
+
+// Candidature preparee automatiquement (CV adapte + message) pour une
+// offre, en attente de validation explicite de l'utilisateur avant tout
+// envoi reel - voir autoApply.ts. Jamais d'envoi silencieux : le statut ne
+// passe a SENT que suite a une action explicite (bouton "Envoyer"/"Marquer
+// comme envoyee" dans l'interface).
+model ApplicationDraft {
+  id           String    @id @default(cuid())
+  offerId      String    @unique
+  offer        Offer     @relation(fields: [offerId], references: [id], onDelete: Cascade)
+  cvVersionId  String // CvVersion (OFFER_ADAPTED) generee pour cette candidature
+  messageText  String
+  applyChannel String // EMAIL (envoi via Gmail possible depuis l'appli) | WEB (candidature externe, ouverture du lien + confirmation manuelle)
+  applyTarget  String // adresse email ou URL, selon applyChannel
+  status       String    @default("PENDING") // PENDING | SENT | DISMISSED
+  createdAt    DateTime  @default(now())
+  sentAt       DateTime?
+}
+
+// Singleton row (id is always "singleton") : compte Gmail connecte en OAuth
+// (lecture seule) pour detecter automatiquement les reponses aux candidatures.
+model GmailAccount {
+  id                 String    @id @default("singleton")
+  email              String?
+  refreshToken       String
+  accessToken        String?
+  accessTokenExpiry  DateTime?
+  historyId          String? // utilise pour ne relire que les nouveaux messages
+  connectedAt        DateTime  @default(now())
+  lastSyncAt         DateTime?
+  lastSyncError      String?
+}
+
+// Garde une trace des emails deja traites pour ne jamais les analyser deux fois.
+model ProcessedEmail {
+  id               String   @id @default(cuid())
+  messageId        String   @unique
+  offerId          String?
+  offer            Offer?   @relation(fields: [offerId], references: [id], onDelete: SetNull)
+  matchedCompany   String?
+  detectedStatus   String? // statut applique automatiquement, si detecte
+  subject          String?
+  snippet          String?
+  processedAt      DateTime @default(now())
+}

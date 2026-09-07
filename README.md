@@ -1,0 +1,495 @@
+# MonAlternance
+
+Site personnel (usage individuel, pas de login) pour piloter une recherche
+d'emploi/alternance :
+
+- **Profil** : informations personnelles + import de CV au format PDF +
+  **photo de profil** (import, recadrage/zoom avant enregistrement,
+  remplacement, suppression), affichee dans l'en-tete du site et sur la
+  page Profil. Stockee via Vercel Blob (URL a suffixe aleatoire non
+  devinable, jamais en base Postgres directement) ; sans
+  `BLOB_READ_WRITE_TOKEN`, l'import de photo affiche un message clair
+  plutot que d'echouer silencieusement.
+- **CV** : le texte du PDF est extrait et analysé pour en tirer les
+  compétences (dictionnaire de mots-clés) et les sections (profil,
+  expériences, formation, langues).
+- **Critères de recherche** : une **description libre** de ce que tu
+  recherches (utilisée en plus des critères structurés pour affiner le
+  score de matching et donner du contexte à l'IA lors de l'adaptation de
+  CV), intitulés de poste, localisations, types de contrat, mots-clés
+  bonus/exclusion. Le type de contrat compare par groupes de synonymes
+  (ex: "Alternance" reconnaît aussi "Contrat d'apprentissage"/"Contrat de
+  professionnalisation", les libellés réels utilisés par les sources
+  d'offres) plutôt qu'une simple sous-chaîne exacte.
+- **Critère obligatoire** (texte libre, ex: "dimension internationale") :
+  analysé par l'IA (titre, missions, description de l'entreprise) sur
+  chaque nouvelle offre récupérée — une offre qui n'y correspond pas est
+  fortement pénalisée (recommandation "Ignorer"). Repli sur une recherche
+  de mots-clés si l'IA n'est pas configurée. Les offres déjà en base au
+  moment où le critère est défini ne sont pas réanalysées automatiquement
+  (pour éviter un pic d'appels IA au moindre changement de critères) :
+  utilise le bouton "Réévaluer les offres déjà récupérées" (page Critères,
+  sous ce champ) pour les rattraper — traite par lots de 15 côté serveur,
+  le bouton relance l'appel jusqu'à ce qu'il n'en reste plus. Un filtre
+  dédié ("Correspond au critère obligatoire" / "Ne correspond pas...") est
+  disponible sur la page Offres.
+- **Application installable (PWA)** : sur mobile (Chrome/Android, Safari/iOS
+  via "Ajouter à l'écran d'accueil"), le site peut être installé comme une
+  app avec sa propre icône. Aucun mode hors-ligne (les données doivent
+  toujours être à jour) — juste l'installabilité.
+- **Interface soignée et réactive** : états de chargement en "squelettes"
+  (silhouettes animées de la forme réelle du contenu à venir) plutôt qu'un
+  simple texte "Chargement...", micro-interactions au survol/clic sur les
+  cartes cliquables et les boutons (léger relief, retour tactile), entrée de
+  page en fondu doux à chaque navigation. Respecte la préférence
+  "mouvement réduit" du système (`prefers-reduced-motion`) en désactivant
+  toutes les animations pour qui l'a demandé.
+- **Discussion avec l'IA** (bouton "Discuter avec l'IA pour préciser ma
+  recherche", page Critères) : une conversation guidée par Claude qui pose
+  des questions une par une (métier visé, secteur, localisation, parcours
+  scolaire, formation préparée, expériences...) sans jamais reposer une
+  question déjà répondue via le CV ou les critères déjà enregistrés. En
+  cliquant sur "Terminer la discussion", la conversation est résumée en une
+  description de recherche enrichie (enregistrée automatiquement) et les
+  faits nouveaux sur la formation sont ajoutés à la section "formation" du
+  profil (jamais d'écrasement, uniquement des ajouts). Nécessite
+  `ANTHROPIC_API_KEY` (pas de repli sans IA pour cette fonctionnalité — un
+  faux chatbot sans IA n'aiderait pas).
+- **Localisations avec autocomplétion + régions + carte** : le champ
+  Localisations de la page Critères propose des villes au fur et à mesure
+  de la saisie (API Adresse gouv.fr) ainsi que les régions administratives
+  françaises (ex: "Île-de-France") — sélectionner une région fait
+  correspondre toute offre située dans un département de cette région,
+  indépendamment du rayon de recherche défini pour les villes. Une carte
+  (Leaflet + fonds de carte OpenStreetMap, gratuits et sans clé) affiche les
+  villes sélectionnées avec un cercle représentant le rayon de recherche, et
+  le contour des régions sélectionnées (API officielle
+  geo.api.gouv.fr).
+- **Page Offres** : masque par défaut les offres refusées/ignorées (statut
+  "Refusé", qu'il vienne du bouton "Ignorer" ou d'un refus détecté via
+  Gmail) et celles jugées peu pertinentes (recommandation "Ignorer") —
+  désactivable via les filtres. La récupération automatique demande
+  désormais davantage d'offres par source (jusqu'à 150 pour France Travail —
+  le maximum documenté par leur API —, et jusqu'à 100 pour Adzuna, qui
+  pagine automatiquement sur plusieurs pages officielles de leur API au-delà
+  de leur limite de 50 résultats par page, et pour La bonne alternance).
+  Adzuna et La bonne alternance interrogent aussi désormais **chaque ville**
+  de tes critères de localisation séparément (jusqu'à 5), et non plus
+  uniquement la première : avec plusieurs villes renseignées, ignorer les
+  suivantes limitait artificiellement le nombre d'offres remontées par ces
+  deux sources. Une région (ex: "Île-de-France") n'est volontairement pas
+  envoyée à ces adaptateurs (ni géocodable pour La bonne alternance, ni
+  fiable comme mot-clé pour Adzuna) : c'est le matching local qui couvre
+  déjà toute la région à partir des offres remontées sans filtre de
+  localisation.
+  Le volume total d'offres reste néanmoins limité aux sources à API
+  officielle (voir plus bas) : contrairement à un agrégateur qui couvrirait
+  des dizaines de job boards et sites carrières d'entreprise, on ne peut pas
+  élargir cette couverture sans une API officielle supplémentaire vérifiée
+  (pas de scraping).
+- **Offres** : ajout manuel ou récupération automatique depuis plusieurs
+  **sources légales à API officielle** (France Travail, Adzuna — jamais de
+  scraping de LinkedIn/Indeed/Welcome to the Jungle, contraire à leurs
+  conditions d'utilisation), avec un **score de compatibilité en %** entre
+  le CV et chaque offre, et le détail des **compétences manquantes**.
+  Architecture : sources → normalisation → **déduplication** (identifiant
+  externe, URL, empreinte de contenu titre+entreprise+description, et
+  titre+entreprise exact — pour détecter les doublons même entre sources
+  différentes) → matching pondéré avec tes critères → score → classement →
+  affichage. Déclenchement **manuel** (bouton "Récupérer des offres") ou
+  **automatique quotidien** (tâche planifiée Vercel, activable/désactivable
+  dans la page Critères — la fréquence est limitée au quotidien par le plan
+  Vercel Hobby). Chaque carte affiche
+  le logo de l'entreprise (si fourni par la source), la date de publication
+  et la source, avec des actions rapides (Voir l'offre, Voir le matching,
+  Adapter mon CV, Postuler, Ignorer). **Filtres** disponibles : score
+  minimum, entreprise, lieu, date de publication, statut de candidature,
+  source.
+- **Matching pondéré multi-critères** : le score combine les compétences du
+  dictionnaire, le chevauchement de vocabulaire CV/offre, et des critères
+  "durs" qui pénalisent fortement le score s'ils ne sont pas respectés :
+  type de contrat, niveau d'expérience demandé (senior/confirmé), niveau de
+  formation requis, localisation (distance réelle via géocodage gratuit,
+  comparée à ton rayon de recherche), et mots-clés exclus (pénalité la plus
+  forte). Chaque offre affiche une **recommandation** (🟢 À postuler / 🔵 À
+  considérer / 🟠 Faible priorité / 🔴 À ignorer), la raison principale, les
+  points forts/faibles et les critères respectés/non respectés. Le
+  géocodage ne bloque jamais le calcul en cas de problème réseau (aucune
+  pénalité appliquée si la distance ne peut pas être déterminée).
+- **Analyse de CV notée** : depuis la page Profil ("Analyser et améliorer
+  mon CV"), une note globale sur 100 et des sous-notes (impact, lisibilité,
+  adéquation avec tes postes recherchés, compatibilité ATS, compétences,
+  expériences) avec des observations concrètes, avant de passer à
+  l'éditeur.
+- **Éditeur de CV assisté par IA** : depuis une offre ("Adapter mon CV à
+  cette offre") ou après l'analyse ci-dessus ("Créer une version
+  améliorée"), propose des améliorations de formulation (accroche, résumé, expériences)
+  et un réordonnancement des compétences pertinentes. Chaque proposition
+  s'affiche en comparatif version actuelle / proposition IA, avec
+  Accepter / Modifier / Refuser — rien n'est appliqué sans validation.
+  Garde-fous anti-invention à plusieurs niveaux (prompt strict, filtrage
+  programmatique des compétences proposées, rejet des réponses
+  démesurément plus longues que l'original). Génère ensuite une nouvelle
+  version de CV en PDF (template moderne : en-tête avec **photo de profil
+  circulaire** si une photo a été importée sur la page Profil, nom/accroche
+  bien mis en valeur, sections avec accent de couleur, compétences en
+  étiquettes). Un bouton **"Prévisualiser"** (partout où un CV peut être
+  téléchargé : éditeur de CV, Mes CV, page d'une offre, file de
+  candidatures) ouvre le PDF dans un nouvel onglet pour le consulter avant
+  de le télécharger ou de l'envoyer.
+- **✨ Optimiser ma candidature** : depuis une offre, un parcours en un
+  clic qui enchaîne l'analyse de l'offre, l'adaptation du CV (avec la
+  revue avant/après habituelle, rien n'est appliqué sans validation), la
+  génération du PDF, puis la proposition d'un **message de candidature**
+  court basé uniquement sur ton CV et l'offre (même garde-fou
+  anti-invention, éditable avant envoi), et enfin un lien direct pour
+  postuler sur l'offre originale (marque automatiquement le statut
+  "postulé").
+- **Mes CV** : retrouve le CV original (fichier importé tel quel si Vercel
+  Blob est configuré, sinon reconstruit depuis le texte extrait) ainsi que
+  les versions améliorées ou adaptées à des offres précises (ex:
+  `CV_Loreal_BusinessDeveloper`), téléchargement et suppression.
+- **Statut de candidature** (non postulé / postulé / entretien / offre reçue
+  / refusé), commentaires libres et lien direct vers l'offre originale.
+- **Pipeline de candidatures** (page "Suivi") : vue en colonnes (à postuler →
+  postulé → entretien → offre reçue → refusé) pour visualiser d'un coup
+  d'œil l'avancement de toutes tes candidatures. Fait glisser une carte
+  d'une colonne à l'autre (ou utilise le menu déroulant sur la carte, plus
+  adapté au tactile) pour changer son statut — persisté immédiatement. La
+  colonne "à postuler" ne montre que les offres à fort potentiel
+  (recommandation "à postuler"/"à considérer") pas encore traitées, pour
+  rester lisible.
+- **Export Excel** : télécharge un fichier `.xlsx` (entreprise, poste,
+  statut, score, commentaires, lien...) pour suivre tes candidatures.
+- **Synchronisation Gmail** (optionnelle) : détecte automatiquement dans ta
+  boîte mail les réponses à tes candidatures (refus, entretien, embauche) et
+  met à jour le statut correspondant, avec un journal dans les commentaires.
+- **Digest email** (optionnel, page Intégrations) : envoie un email (via
+  Gmail) après chaque récupération automatique listant les nouvelles offres
+  à fort potentiel (recommandation "À postuler"/"À considérer").
+- **Candidatures automatisées** (optionnel, page Critères puis page
+  "Candidatures") : pour chaque nouvelle offre recommandée "À postuler"
+  avec un canal de candidature détecté, prépare automatiquement un CV
+  adapté (édition IA avec acceptation automatique de toutes les
+  propositions, mêmes garde-fous anti-invention que l'éditeur manuel) et un
+  message de candidature, puis les place dans une **file d'attente à
+  valider** (page `/applications`) — **rien n'est jamais envoyé
+  automatiquement**, chaque candidature attend une action explicite.
+  Détection du canal (`src/lib/applyChannel.ts`) : un lien `mailto:` fourni
+  par la source fait foi directement ; à défaut, une adresse email trouvée
+  dans la description à proximité d'un mot-clé de candidature (moins fiable,
+  raison de plus pour toujours valider avant envoi) ; sinon le lien de
+  l'offre elle-même (candidature externe). Deux actions possibles depuis la
+  file d'attente : "Envoyer par email" (envoi réel via Gmail avec le CV en
+  pièce jointe — nécessite le scope `gmail.send`, voir Synchronisation
+  Gmail) ou "Ouvrir l'offre" + "Marquer comme envoyée" (candidature externe,
+  postulée manuellement sur le site d'origine). Traité par lots de 8 côté
+  serveur (bouton "Préparer les candidatures", même principe que la
+  réévaluation du critère obligatoire) pour éviter un pic d'appels IA d'un
+  coup. On ne construit volontairement **pas** de bot de remplissage
+  automatique de formulaires sur des sites tiers : fragile (chaque site a sa
+  propre structure), contraire aux conditions d'utilisation de la plupart
+  des plateformes de recrutement (LinkedIn Easy Apply notamment), et risqué
+  pour le compte de l'utilisateur.
+
+## Stack technique
+
+Next.js (App Router, TypeScript) + Tailwind CSS + Prisma/PostgreSQL.
+
+## Base de données
+
+Le site utilise PostgreSQL (necessaire pour persister les donnees une fois
+deploye — Vercel et la plupart des hebergeurs serverless n'ont pas de disque
+persistant, donc une base SQLite en fichier local ne survivrait pas aux
+redeploiements).
+
+**En local**, le plus simple est une base PostgreSQL locale (via
+[Postgres.app](https://postgresapp.com/), `apt install postgresql`, ou
+Docker : `docker run -d -p 5432:5432 -e POSTGRES_PASSWORD=postgres postgres`).
+
+**Pour deployer** (ex: sur Vercel), utilise une base PostgreSQL hebergee.
+[Neon](https://neon.tech) a un plan gratuit largement suffisant pour un usage
+personnel et s'integre directement a Vercel (bouton "Add Integration" ->
+Neon, dans les parametres du projet Vercel : ca cree la base et remplit
+automatiquement `DATABASE_URL`). Alternatives : Supabase, Railway.
+
+Dans les deux cas, renseigne l'URL de connexion dans `.env` :
+
+```
+DATABASE_URL="postgresql://user:password@host:5432/dbname"
+```
+
+**Sur Vercel**, le script `build` (`prisma generate && prisma migrate deploy
+&& next build`) applique automatiquement les migrations en attente a chaque
+deploiement, en utilisant la variable `DATABASE_URL` deja configuree dans
+les parametres du projet — aucune commande manuelle a lancer apres le
+premier deploiement. Ca implique que `DATABASE_URL` doit etre disponible au
+moment du **build**, pas seulement a l'execution : dans les parametres
+Vercel du projet, verifie que la variable est bien activee pour tous les
+environnements ou tu deploies (Production, et Preview si tu deploies des
+branches/PR comme celle-ci — sans quoi le build d'une preview echouera
+faute de base de donnees accessible).
+
+## Démarrage local
+
+```bash
+npm install
+npx prisma migrate deploy   # cree les tables dans la base PostgreSQL (deja inclus dans `npm run build`)
+npm run dev
+```
+
+Le site est disponible sur http://localhost:3000.
+
+Aucune clé IA/API n'est necessaire pour commencer (seule une base PostgreSQL
+est requise, voir ci-dessus) : tu peux tout de suite importer ton CV,
+definir tes criteres, et ajouter des offres manuellement. Le score de
+matching et l'adaptation de CV fonctionnent des le depart grace a un moteur
+par mots-cles/competences (sans IA).
+
+## Fonctionnalites optionnelles (cles a ajouter dans `.env`)
+
+Copie `.env.example` en `.env` (deja fait dans ce depot) et complete au
+besoin :
+
+### 1. Adaptation de CV par IA (Claude / Anthropic)
+
+```
+ANTHROPIC_API_KEY=sk-ant-...
+```
+
+Sans cette cle : l'adaptation de CV reordonne et selectionne le contenu deja
+present dans le CV original (aucune reformulation, aucune invention).
+
+Avec cette cle : Claude reformule/reordonne le CV en respectant une regle
+stricte de non-invention (le prompt interdit explicitement d'ajouter une
+competence, experience ou donnee absente du CV source).
+
+Cette meme cle active aussi le **decoupage du CV en sections par IA** (a
+l'import, `src/lib/ai.ts` -> `parseCv`) : plutot que de chercher des
+intitules de section attendus ("Experience", "Formation"...) comme le fait
+le repli heuristique (`cvParser.ts`), Claude identifie chaque section par
+son contenu, ce qui evite un mauvais decoupage sur un CV a la mise en page
+inhabituelle (et donc une erreur qui se propagerait ensuite au score, aux
+suggestions et au matching). Un garde-fou verifie que chaque extrait
+renvoye par l'IA figure bien mot pour mot dans le texte source (aux
+espaces/sauts de ligne pres) avant de l'accepter : toute reformulation ou
+invention est rejetee plutot que silencieusement acceptee. Sans cle
+Anthropic, ou en cas d'erreur de l'appel IA, le decoupage heuristique
+existant prend le relais automatiquement.
+
+### 2. Recuperation automatique d'offres (sources multiples)
+
+Chaque source ci-dessous est independante et optionnelle : active-en une ou
+plusieurs (les doublons entre sources sont detectes automatiquement via
+URL / identifiant externe / empreinte de contenu). Sans aucune source
+configuree, le bouton "Recuperer des offres" affiche un message explicatif
+et l'ajout manuel d'offres reste disponible.
+
+**France Travail** (offres officielles Pole Emploi) :
+
+1. Cree un compte et une application sur https://francetravail.io
+   (produit "Offres d'emploi v2").
+2. Recupere l'identifiant client et la cle secrete de l'application.
+3. Renseigne-les dans `.env` :
+
+```
+FRANCE_TRAVAIL_CLIENT_ID=...
+FRANCE_TRAVAIL_CLIENT_SECRET=...
+```
+
+**Adzuna** (agregateur d'offres, cle gratuite) :
+
+1. Cree un compte sur https://developer.adzuna.com et recupere ton
+   `app_id`/`app_key`.
+2. Renseigne-les dans `.env` :
+
+```
+ADZUNA_APP_ID=...
+ADZUNA_APP_KEY=...
+```
+
+**La bonne alternance** (API gouvernementale gratuite, specifique
+alternance/apprentissage, agrege France Travail + d'autres diffuseurs,
+usage non commercial uniquement) :
+
+1. Va sur https://api.apprentissage.beta.gouv.fr/fr/explorer/recherche-offre
+2. Clique sur "Obtenir un jeton d'acces" pour recuperer une cle de type
+   **sandbox** (automatique, gratuite). Une cle **production** necessite
+   une demande par email a support_api@apprentissage.beta.gouv.fr.
+3. Renseigne-la dans `.env` :
+
+```
+LBA_API_KEY=...
+```
+
+Recherche par coordonnees GPS (geocodees a partir de ta premiere
+localisation de criteres) + rayon ; sans localisation definie, l'appel est
+simplement ignore (aucune erreur).
+
+### 3. Synchronisation Gmail (detection automatique des reponses)
+
+Permet au site de lire (en lecture seule) les emails recus dans ta boite
+Gmail, de les associer a une offre pour laquelle tu as deja postule (par nom
+d'entreprise/intitule de poste), puis de mettre a jour automatiquement le
+statut de candidature (refus, entretien, embauche) quand un email
+correspondant est detecte. Chaque mise a jour automatique est journalisee
+dans les commentaires de l'offre (date, expediteur, objet du mail) pour que
+tu puisses toujours verifier/corriger.
+
+Permet aussi (optionnel, page Integrations, necessite le meme compte
+Gmail connecte) l'**envoi** d'un digest email listant les nouvelles
+offres a fort potentiel apres chaque recuperation automatique — utilise
+le scope `gmail.send`. Si tu as connecte Gmail avant cette fonctionnalite,
+deconnecte puis reconnecte ton compte (Google n'accorde pas un nouveau
+scope retroactivement a un token deja emis).
+
+**Etape 1 — Creer le projet Google Cloud et les identifiants OAuth :**
+
+1. Va sur https://console.cloud.google.com et cree un nouveau projet (ou
+   utilise un projet existant).
+2. Dans "API et services" > "Bibliotheque", cherche **Gmail API** et
+   active-la.
+3. Dans "API et services" > "Ecran de consentement OAuth" :
+   - Type d'utilisateur : **Externe**.
+   - Renseigne un nom d'application (ex: "MonAlternance") et ton email.
+   - Dans la section "Utilisateurs test" (l'app reste en mode "Test", pas
+     besoin de validation Google pour un usage personnel), ajoute **ta
+     propre adresse Gmail**.
+4. Dans "API et services" > "Identifiants" > "Creer des identifiants" >
+   **ID client OAuth** :
+   - Type d'application : **Application Web**.
+   - URI de redirection autorisee : `http://localhost:3000/api/gmail/callback`
+     (adapte le domaine/port si tu deploies le site ailleurs — l'URI doit
+     correspondre EXACTEMENT a `GOOGLE_REDIRECT_URI`).
+5. Copie le **ID client** et le **Code secret du client** generes.
+
+**Etape 2 — Configurer `.env` :**
+
+```
+GOOGLE_CLIENT_ID=...
+GOOGLE_CLIENT_SECRET=...
+GOOGLE_REDIRECT_URI="http://localhost:3000/api/gmail/callback"
+```
+
+Redemarre le serveur (`npm run dev`), va sur la page **Integrations** du
+site, clique sur "Connecter Gmail", et autorise l'acces (lecture seule)
+depuis l'ecran Google. Utilise ensuite le bouton "Synchroniser maintenant"
+pour lancer une premiere verification.
+
+**Etape 3 — Synchronisation automatique en arriere-plan (optionnel) :**
+
+Le bouton "Synchroniser maintenant" fonctionne immediatement en local, mais
+ne se declenche pas tout seul : pour une verification vraiment automatique
+(ex: toutes les heures, sans que tu y penses), il faut que le site tourne en
+continu quelque part et qu'une tache planifiee appelle
+`POST /api/gmail/sync`. Plusieurs options :
+
+- **Vercel Cron** : ce depot contient deja un `vercel.json` avec une tache
+  planifiee quotidienne (6h du matin) et `"framework": "nextjs"` (force la
+  detection du framework — sans ca, Vercel peut chercher un dossier
+  `public/` statique et echouer au deploiement avec l'erreur "No Output
+  Directory named public found" au lieu d'utiliser le runtime Next.js). Si
+  cette erreur apparait quand meme, verifie dans les parametres du projet
+  Vercel > "Build and Deployment" que le "Framework Preset" est bien
+  "Next.js" et qu'aucun "Output Directory" personnalise n'est force. Le plan
+  gratuit "Hobby" de Vercel limite par ailleurs les cron jobs a une
+  execution par jour maximum ; passe a une frequence plus rapprochee (ex:
+  toutes les heures, `0 * * * *`) uniquement si tu passes au plan Pro. Si tu
+  deploies sur Vercel, definis une variable d'environnement `CRON_SECRET`
+  (n'importe quelle chaine aleatoire) dans les parametres du projet Vercel —
+  Vercel l'enverra automatiquement en en-tete
+  `Authorization: Bearer <CRON_SECRET>` a chaque declenchement.
+  (La base PostgreSQL hebergee, voir "Base de donnees" plus haut, persiste
+  normalement entre les redeploiements Vercel.)
+- **Serveur/VPS** : deploie le site (`npm run build && npm start`) et
+  ajoute une tache cron systeme, ex :
+  ```
+  0 * * * * curl -X POST https://ton-domaine/api/gmail/sync -H "Authorization: Bearer $CRON_SECRET"
+  ```
+- **GitHub Actions planifie** : un workflow `schedule` qui fait un simple
+  `curl` vers `/api/gmail/sync` avec le meme en-tete, si le site est
+  accessible publiquement.
+
+Sans `CRON_SECRET` defini, l'endpoint `/api/gmail/sync` reste ouvert (pour
+que le bouton manuel fonctionne sans configuration en local) : defini
+toujours `CRON_SECRET` avant de deployer le site publiquement.
+
+### 4. Conservation du fichier CV original (Vercel Blob)
+
+Par defaut, seul le **texte** du CV importe est conserve (extrait a
+l'import). Pour que la page **Mes CV** puisse aussi retelecharger le
+fichier PDF original exactement tel qu'importe (plutot qu'une
+reconstruction a partir du texte) :
+
+1. Dans le projet Vercel, va dans **Storage** > **Create Database** >
+   **Blob**, et cree un store (plan gratuit largement suffisant pour un
+   usage personnel).
+2. La variable `BLOB_READ_WRITE_TOKEN` est ajoutee automatiquement aux
+   variables d'environnement du projet.
+3. En local, copie cette meme valeur dans `.env` si tu veux tester cette
+   fonctionnalite en developpement.
+
+Sans cette configuration, tout continue de fonctionner normalement : le CV
+"original" affiche sur la page Mes CV est simplement reconstruit (mise en
+page propre, meme contenu texte) plutot que d'etre le fichier exact importe.
+
+## Structure du projet
+
+```
+prisma/schema.prisma       Modeles Profile / Criteria / Offer / GmailAccount /
+                            ProcessedEmail / CvVersion
+src/lib/
+  cvParser.ts               Analyse heuristique du texte du CV (repli sans IA)
+  skills.ts                 Dictionnaire de competences + extraction
+  matching.ts                Calcul du score de compatibilite
+  ai.ts                      Decoupage du CV en sections, propositions d'edition,
+                               notation, classification d'emails (IA ou fallback)
+  cvVersion.ts                Application des decisions accepter/modifier/refuser + nommage des versions
+  applyChannel.ts              Detection du canal de candidature (email/web) a partir d'une offre
+  autoApply.ts                 Preparation automatique d'une candidature (CV adapte + message), sans envoi
+  franceTravail.ts           Adaptateur API France Travail
+  adzuna.ts                   Adaptateur API Adzuna
+  labonnealternance.ts        Adaptateur API La bonne alternance
+  offerSources.ts              Point d'entree regroupant les sources d'offres
+  geocode.ts                   Geocodage (API Adresse) pour distance/rayon
+  gmail.ts                   Client OAuth Gmail + lecture des messages
+  emailMatcher.ts             Association email <-> offre + classification du statut
+  gmailSync.ts                Orchestration de la synchronisation Gmail
+  excelExport.ts              Generation du fichier Excel de suivi
+  storage.ts                  Stockage de fichiers (Vercel Blob)
+  pdfText.ts                  Extraction du texte d'un PDF importe
+  cvTemplate.ts                Template PDF (design soigne) pour toutes les versions de CV
+src/app/
+  page.tsx                    Accueil / tableau de bord (stats, offres a fort potentiel non traitees)
+  profile/, criteria/, offers/, pipeline/, applications/, cv-editor/,
+    cv-history/, integrations/  Pages
+  api/                        Routes API (profile, criteria, offers, cv/upload,
+                               cv-versions, offers/export, gmail/...)
+```
+
+## Tests
+
+```
+npm test
+```
+
+Tests unitaires (Vitest) sur la logique la plus sensible aux regressions :
+`matching.ts` (types de contrat par synonymes, mots-cles bonus/exclus,
+localisation par ville/rayon et par region, recommandations),
+`frenchRegions.ts` et `geocode.ts` (code departement). Les appels reseau
+(geocodage) sont mockes pour des tests rapides et deterministes.
+
+## Notes
+
+- Base de donnees PostgreSQL (locale ou hebergee) — voir "Base de donnees".
+  Aucun fichier de base n'est commite dans le depot.
+- Application mono-utilisateur : aucune authentification.
+- Le dictionnaire de competences (`src/lib/skills.ts`) peut etre complete
+  facilement pour ameliorer la detection selon ton domaine.
+- Le refresh token Gmail est stocke en clair dans la base de donnees (usage
+  personnel, base non partagee). Si tu deploies le site publiquement,
+  protege l'acces a la base de donnees en consequence.
+- L'integration Gmail utilise `@googleapis/gmail` (client cible, ~1 Mo) et
+  non le paquet `googleapis` complet (qui embarque ~300 API Google pour
+  ~200 Mo et fait echouer le deploiement des fonctions serverless Vercel en
+  depassant la limite de taille).
