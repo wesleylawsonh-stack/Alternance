@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { SkeletonCardList } from "@/components/Skeleton";
 
 type Draft = {
   id: string;
@@ -103,7 +104,20 @@ export default function ApplicationsPage() {
     setDrafts((ds) => ds.filter((d) => d.id !== id));
   }
 
-  if (loading) return <p className="text-slate-500">Chargement...</p>;
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-semibold text-slate-900">Candidatures a valider</h1>
+          <p className="text-slate-500 mt-1">
+            Pour chaque offre a fort potentiel, un CV adapte et un message de candidature sont generes ici. Rien
+            n&apos;est envoye sans ta validation.
+          </p>
+        </div>
+        <SkeletonCardList count={3} />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

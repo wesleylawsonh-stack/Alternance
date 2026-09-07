@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import ScoreBadge from "@/components/ScoreBadge";
 import StatusSelect from "@/components/StatusSelect";
+import Skeleton from "@/components/Skeleton";
 
 type Offer = {
   id: string;
@@ -95,7 +96,25 @@ export default function PipelinePage() {
     if (offerId) moveOffer(offerId, targetStatus);
   }
 
-  if (loading) return <p className="text-slate-500">Chargement...</p>;
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <Skeleton className="h-7 w-64 mb-2" />
+          <Skeleton className="h-4 w-full max-w-lg" />
+        </div>
+        <div className="flex gap-4 overflow-x-auto pb-4">
+          {COLUMNS.map((col) => (
+            <div key={col.key} className="flex-shrink-0 w-72 card p-3 space-y-3 bg-slate-50/60">
+              <Skeleton className="h-4 w-24" />
+              <Skeleton className="h-20 w-full" />
+              <Skeleton className="h-20 w-full" />
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   const totalTracked = buckets.APPLIED.length + buckets.INTERVIEW.length + buckets.OFFER.length + buckets.REJECTED.length;
 
@@ -140,7 +159,7 @@ export default function PipelinePage() {
                     key={offer.id}
                     draggable
                     onDragStart={(e) => e.dataTransfer.setData("text/offer-id", offer.id)}
-                    className={`card p-3 space-y-2 cursor-grab active:cursor-grabbing bg-white ${
+                    className={`card card-interactive p-3 space-y-2 cursor-grab active:cursor-grabbing bg-white ${
                       updatingId === offer.id ? "opacity-50" : ""
                     }`}
                   >

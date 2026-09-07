@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import Nav from "@/components/Nav";
 import ServiceWorkerRegister from "@/components/ServiceWorkerRegister";
+import PageTransition from "@/components/PageTransition";
 
 export const metadata: Metadata = {
   title: "MonAlternance",
@@ -26,7 +27,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="min-h-screen">
         <ServiceWorkerRegister />
         <Nav />
-        <main className="mx-auto max-w-5xl px-4 py-8">{children}</main>
+        <main className="mx-auto max-w-5xl px-4 py-8">
+          <PageTransition>{children}</PageTransition>
+        </main>
       </body>
     </html>
   );

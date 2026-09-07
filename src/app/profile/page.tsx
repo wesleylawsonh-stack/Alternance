@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import PhotoCropModal from "@/components/PhotoCropModal";
+import Skeleton, { SkeletonForm } from "@/components/Skeleton";
 
 type Profile = {
   fullName: string | null;
@@ -175,7 +176,24 @@ export default function ProfilePage() {
 
   const skills: string[] = Array.isArray(profile.cvSkills) ? (profile.cvSkills as string[]) : [];
 
-  if (loading) return <p className="text-slate-500">Chargement...</p>;
+  if (loading) {
+    return (
+      <div className="space-y-8">
+        <div>
+          <Skeleton className="h-7 w-40 mb-2" />
+          <Skeleton className="h-4 w-full max-w-md" />
+        </div>
+        <div className="card p-6 flex items-center gap-4">
+          <Skeleton className="w-16 h-16 rounded-full shrink-0" />
+          <div className="flex-1 space-y-2">
+            <Skeleton className="h-4 w-1/3" />
+            <Skeleton className="h-3 w-1/4" />
+          </div>
+        </div>
+        <SkeletonForm fields={4} />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">

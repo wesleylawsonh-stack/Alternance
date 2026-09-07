@@ -37,6 +37,13 @@ d'emploi/alternance :
   via "Ajouter à l'écran d'accueil"), le site peut être installé comme une
   app avec sa propre icône. Aucun mode hors-ligne (les données doivent
   toujours être à jour) — juste l'installabilité.
+- **Interface soignée et réactive** : états de chargement en "squelettes"
+  (silhouettes animées de la forme réelle du contenu à venir) plutôt qu'un
+  simple texte "Chargement...", micro-interactions au survol/clic sur les
+  cartes cliquables et les boutons (léger relief, retour tactile), entrée de
+  page en fondu doux à chaque navigation. Respecte la préférence
+  "mouvement réduit" du système (`prefers-reduced-motion`) en désactivant
+  toutes les animations pour qui l'a demandé.
 - **Discussion avec l'IA** (bouton "Discuter avec l'IA pour préciser ma
   recherche", page Critères) : une conversation guidée par Claude qui pose
   des questions une par une (métier visé, secteur, localisation, parcours

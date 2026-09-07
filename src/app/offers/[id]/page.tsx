@@ -5,6 +5,7 @@ import Link from "next/link";
 import ScoreBadge from "@/components/ScoreBadge";
 import RecommendationBadge from "@/components/RecommendationBadge";
 import StatusSelect from "@/components/StatusSelect";
+import Skeleton from "@/components/Skeleton";
 
 const SOURCE_LABELS: Record<string, string> = {
   manual: "Ajout manuel",
@@ -91,7 +92,27 @@ export default function OfferDetailPage({ params }: { params: Promise<{ id: stri
     setTimeout(() => setCommentsSaved(false), 2500);
   }
 
-  if (loading) return <p className="text-slate-500">Chargement...</p>;
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <Skeleton className="h-4 w-32" />
+        <div className="card p-6 space-y-4">
+          <div className="flex items-start gap-3">
+            <Skeleton className="w-12 h-12 rounded-lg shrink-0" />
+            <div className="flex-1 space-y-2">
+              <Skeleton className="h-6 w-2/3" />
+              <Skeleton className="h-4 w-1/2" />
+            </div>
+          </div>
+        </div>
+        <div className="card p-6 space-y-3">
+          <Skeleton className="h-4 w-full" />
+          <Skeleton className="h-4 w-full" />
+          <Skeleton className="h-4 w-3/4" />
+        </div>
+      </div>
+    );
+  }
   if (!offer) return <p className="text-slate-500">Offre introuvable.</p>;
 
   const matched = Array.isArray(offer.matchedSkills) ? (offer.matchedSkills as string[]) : [];

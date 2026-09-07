@@ -2,6 +2,7 @@
 
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import Skeleton, { SkeletonForm } from "@/components/Skeleton";
 
 type GmailStatus = {
   configured: boolean;
@@ -13,7 +14,7 @@ type GmailStatus = {
 
 export default function IntegrationsPage() {
   return (
-    <Suspense fallback={<p className="text-slate-500">Chargement...</p>}>
+    <Suspense fallback={<SkeletonForm fields={2} />}>
       <IntegrationsContent />
     </Suspense>
   );
@@ -90,7 +91,17 @@ function IntegrationsContent() {
     load();
   }
 
-  if (loading) return <p className="text-slate-500">Chargement...</p>;
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <Skeleton className="h-7 w-40 mb-2" />
+          <Skeleton className="h-4 w-full max-w-md" />
+        </div>
+        <SkeletonForm fields={2} />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

@@ -5,6 +5,7 @@ import Link from "next/link";
 import SearchProfileChat from "@/components/SearchProfileChat";
 import LocationInput from "@/components/LocationInput";
 import LocationMap from "@/components/LocationMap";
+import Skeleton, { SkeletonForm } from "@/components/Skeleton";
 
 type Criteria = {
   jobTitles: string[];
@@ -129,7 +130,17 @@ export default function CriteriaPage() {
     setTimeout(() => setRescanMsg(null), 6000);
   }
 
-  if (loading) return <p className="text-slate-500">Chargement...</p>;
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <Skeleton className="h-7 w-64 mb-2" />
+          <Skeleton className="h-4 w-full max-w-md" />
+        </div>
+        <SkeletonForm fields={5} />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

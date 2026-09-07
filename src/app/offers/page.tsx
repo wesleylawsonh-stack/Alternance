@@ -5,6 +5,7 @@ import Link from "next/link";
 import ScoreBadge from "@/components/ScoreBadge";
 import RecommendationBadge from "@/components/RecommendationBadge";
 import StatusSelect, { STATUS_LABELS } from "@/components/StatusSelect";
+import { SkeletonCardList } from "@/components/Skeleton";
 
 type Offer = {
   id: string;
@@ -264,7 +265,7 @@ export default function OffersPage() {
       </div>
 
       {loading ? (
-        <p className="text-slate-500">Chargement...</p>
+        <SkeletonCardList count={5} />
       ) : offers.length === 0 ? (
         <p className="text-slate-500 card p-6 text-center">
           Aucune offre ne correspond. Ajoutes-en une, lance une recuperation automatique, ou ajuste les filtres.
@@ -275,7 +276,7 @@ export default function OffersPage() {
             const missing = Array.isArray(offer.missingSkills) ? (offer.missingSkills as string[]) : [];
             const displayDate = offer.postedAt ?? offer.fetchedAt;
             return (
-              <div key={offer.id} className="card p-4 hover:border-brand-300 transition-colors">
+              <div key={offer.id} className="card card-interactive p-4">
                 <div className="flex items-start justify-between gap-4">
                   <Link href={`/offers/${offer.id}`} className="min-w-0 flex gap-3 group">
                     {offer.companyLogoUrl ? (

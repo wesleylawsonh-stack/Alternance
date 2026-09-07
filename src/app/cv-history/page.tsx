@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { SkeletonCardList } from "@/components/Skeleton";
 
 type CvVersion = {
   id: string;
@@ -44,7 +45,19 @@ export default function CvHistoryPage() {
     load();
   }
 
-  if (loading) return <p className="text-slate-500">Chargement...</p>;
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-semibold text-slate-900">Mes CV</h1>
+          <p className="text-slate-500 mt-1">
+            Ton CV original, ses versions ameliorees et celles adaptees a des offres precises.
+          </p>
+        </div>
+        <SkeletonCardList count={3} />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

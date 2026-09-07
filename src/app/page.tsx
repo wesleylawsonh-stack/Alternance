@@ -140,7 +140,7 @@ export default async function Home() {
               <Link
                 key={offer.id}
                 href={`/offers/${offer.id}`}
-                className="flex items-center justify-between gap-3 p-3 rounded-xl hover:bg-slate-50 border border-slate-100 transition-colors"
+                className="flex items-center justify-between gap-3 p-3 rounded-xl hover:bg-slate-50 hover:border-slate-200 active:scale-[0.99] border border-slate-100 transition-all duration-150"
               >
                 <div className="flex items-center gap-3 min-w-0">
                   {offer.companyLogoUrl ? (

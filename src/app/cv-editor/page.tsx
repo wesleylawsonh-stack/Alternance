@@ -3,6 +3,8 @@
 import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
+import { Loader2 } from "lucide-react";
+import { SkeletonForm } from "@/components/Skeleton";
 
 type Proposal = {
   id: string;
@@ -35,7 +37,7 @@ const CATEGORY_LABELS: Record<string, string> = {
 
 export default function CvEditorPage() {
   return (
-    <Suspense fallback={<p className="text-slate-500">Chargement...</p>}>
+    <Suspense fallback={<SkeletonForm fields={3} />}>
       <CvEditorContent />
     </Suspense>
   );
@@ -180,7 +182,14 @@ function CvEditorContent() {
     });
   }
 
-  if (loading) return <p className="text-slate-500">Analyse du CV en cours...</p>;
+  if (loading) {
+    return (
+      <div className="card p-10 flex flex-col items-center justify-center gap-3 text-center">
+        <Loader2 className="w-6 h-6 text-brand-600 animate-spin" />
+        <p className="text-slate-500">Analyse du CV en cours...</p>
+      </div>
+    );
+  }
 
   if (result) {
     return (
