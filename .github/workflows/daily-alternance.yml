@@ -26,8 +26,16 @@ jobs:
 
       - name: Fetch and send alternance offers
         env:
+          # France Travail (optionnel mais recommande)
           FT_CLIENT_ID: ${{ secrets.FT_CLIENT_ID }}
           FT_CLIENT_SECRET: ${{ secrets.FT_CLIENT_SECRET }}
+          # Adzuna (optionnel)
+          ADZUNA_APP_ID: ${{ secrets.ADZUNA_APP_ID }}
+          ADZUNA_APP_KEY: ${{ secrets.ADZUNA_APP_KEY }}
+          # Jooble (optionnel)
+          JOOBLE_API_KEY: ${{ secrets.JOOBLE_API_KEY }}
+          # La Bonne Alternance : aucune cle requise, activee par defaut
+          # E-mail
           SMTP_HOST: ${{ secrets.SMTP_HOST }}
           SMTP_PORT: ${{ secrets.SMTP_PORT }}
           SMTP_USER: ${{ secrets.SMTP_USER }}
