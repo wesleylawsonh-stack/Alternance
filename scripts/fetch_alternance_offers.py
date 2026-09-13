@@ -143,10 +143,11 @@ def collect_all_offers() -> list:
 
 
 def dedupe_across_sources(offers: list) -> list:
-    """Garde une seule occurrence de la meme offre postee sur plusieurs sources."""
+    """Garde une seule occurrence de la meme offre (memes agences republient
+    parfois le meme intitule sur plusieurs villes/departements)."""
     by_fingerprint = {}
     for offre in offers:
-        fp = base.fingerprint(offre["title"], offre["company"], offre["location"])
+        fp = base.fingerprint(offre["title"], offre["company"])
         if fp not in by_fingerprint:
             by_fingerprint[fp] = offre
     return list(by_fingerprint.values())
@@ -157,8 +158,23 @@ def main() -> int:
     print(f"[info] {len(raw_offers)} offre(s) brute(s) toutes sources confondues.")
 
     idf_offers = [o for o in raw_offers if base.is_idf_location(o["location"])]
+
+    # On ecarte les offres d'agences/ecoles qui recrutent pour LEUR propre
+    # cursus (Aurlom, ICademie, ISCOD...) et celles sans entreprise identifiee
+    # (generalement le meme type d'annonces generiques republiees en masse).
+    known_company_offers = [o for o in idf_offers if base.is_company_known(o["company"])]
+    filtered_offers = [
+        o
+        for o in known_company_offers
+        if not base.is_partner_school_offer(o["title"], o["company"], o["description"])
+    ]
+    print(
+        f"[info] {len(idf_offers) - len(filtered_offers)} offre(s) ecartee(s) "
+        "(entreprise inconnue ou ecole/agence partenaire)."
+    )
+
     sector_offers = [
-        o for o in idf_offers if base.is_sector_relevant(o["title"], o["description"])
+        o for o in filtered_offers if base.is_sector_relevant(o["title"], o["description"])
     ]
     relevant_offers = [
         o
@@ -177,7 +193,7 @@ def main() -> int:
     new_offers = [
         o
         for o in deduped_offers
-        if base.fingerprint(o["title"], o["company"], o["location"]) not in seen
+        if base.fingerprint(o["title"], o["company"]) not in seen
     ]
     new_offers.sort(key=lambda o: o.get("date", ""), reverse=True)
 
@@ -195,7 +211,7 @@ def main() -> int:
 
     now_iso = datetime.now(timezone.utc).isoformat()
     for offre in deduped_offers:
-        fp = base.fingerprint(offre["title"], offre["company"], offre["location"])
+        fp = base.fingerprint(offre["title"], offre["company"])
         seen.setdefault(fp, now_iso)
     save_seen(seen)
 

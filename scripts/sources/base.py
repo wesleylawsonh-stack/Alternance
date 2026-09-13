@@ -32,6 +32,24 @@ INTERNATIONAL_KEYWORDS = [
     "overseas", "etranger",
 ]
 
+# Noms d'ecoles/agences qui recrutent pour LEUR PROPRE cursus (l'alternance
+# implique de s'inscrire chez elles, pas de continuer une formation existante).
+# On les exclut : ce ne sont pas des offres d'entreprise "classiques".
+PARTNER_SCHOOL_NAMES = [
+    "aurlom", "icademie", "iscod", "skillie", "ionis", "efficience",
+    "studi", "esup", "groupe igs", "ipac", "talent detection",
+    "bachelor factory", "ecole de commerce en alternance",
+]
+
+# Formulations typiques d'une offre "ecole partenaire" (l'alternance sert a
+# recruter des etudiants pour un cursus, pas a pourvoir un poste precis).
+PARTNER_SCHOOL_PHRASES = [
+    "frais de scolarite", "scolarite gratuite", "inscription gratuite",
+    "notre ecole", "nos partenaires", "centre de formation partenaire",
+    "prepare le bachelor", "preparer le bachelor", "preparer un bts",
+    "souhaitant preparer", "a l'ecole aurlom", "pour le compte de ses partenaires",
+]
+
 # Departements d'Ile-de-France
 IDF_DEPARTEMENTS = ["75", "77", "78", "91", "92", "93", "94", "95"]
 
@@ -100,9 +118,31 @@ def matched_international_keywords(title: str, description: str) -> list:
     return matched_keywords(text, INTERNATIONAL_KEYWORDS)
 
 
-def fingerprint(title: str, company: str, location: str) -> str:
-    """Cle approximative pour reperer la meme offre postee sur plusieurs sources."""
-    parts = [normalize(title), normalize(company), normalize(location)]
+def is_company_known(company: str) -> bool:
+    return bool(company) and normalize(company) != "entreprise non precisee"
+
+
+def is_partner_school_offer(title: str, company: str, description: str) -> bool:
+    """Detecte les offres d'agences/ecoles qui recrutent pour LEUR cursus
+    (ex: Aurlom, ICademie, ISCOD) plutot que des offres d'entreprise classiques.
+    """
+    company_norm = normalize(company)
+    if any(name in company_norm for name in PARTNER_SCHOOL_NAMES):
+        return True
+    text = normalize(f"{title} {description}")
+    if any(name in text for name in PARTNER_SCHOOL_NAMES):
+        return True
+    if any(strip_accents(phrase) in text for phrase in PARTNER_SCHOOL_PHRASES):
+        return True
+    return False
+
+
+def fingerprint(title: str, company: str) -> str:
+    """Cle approximative pour reperer la meme offre postee plusieurs fois
+    (memes agences republient parfois le meme intitule sur plusieurs villes/
+    departements : on ignore volontairement le lieu pour eviter les doublons).
+    """
+    parts = [normalize(title), normalize(company)]
     return "|".join(p.strip() for p in parts)
 
 
