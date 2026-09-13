@@ -1,0 +1,45 @@
+name: Alertes alternance quotidiennes
+
+on:
+  schedule:
+    # 06:00 UTC ~ 07:00-08:00 heure de Paris selon l'heure d'ete/hiver
+    - cron: "0 6 * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  send-offers:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Fetch and send alternance offers
+        env:
+          FT_CLIENT_ID: ${{ secrets.FT_CLIENT_ID }}
+          FT_CLIENT_SECRET: ${{ secrets.FT_CLIENT_SECRET }}
+          SMTP_HOST: ${{ secrets.SMTP_HOST }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+          MAIL_FROM: ${{ secrets.MAIL_FROM }}
+          MAIL_TO: ${{ secrets.MAIL_TO || 'romane.mj972@gmail.com' }}
+        run: python scripts/fetch_alternance_offers.py
+
+      - name: Persist seen offers cache
+        run: |
+          git config user.name "alternance-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add data/seen_offers.json
+          git diff --cached --quiet || git commit -m "chore: update seen offers cache"
+          git push
