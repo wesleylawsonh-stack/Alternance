@@ -10,9 +10,7 @@
     document.documentElement.classList.add("js");
     if (!(window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches)) document.documentElement.classList.add("intro");
   </script>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="fonts/fonts.css">
   <style>
     :root {
       --intro: 0s;
@@ -234,8 +232,13 @@
     .hours td { padding: 3px 0; }
     .hours td:last-child { text-align: right; }
     .hours tr.today td { color: var(--text); font-weight: 600; }
-    .map { border-radius: var(--radius); overflow: hidden; min-height: 360px; background: #e6ddd1; }
-    .map iframe { width: 100%; height: 100%; min-height: 360px; border: 0; }
+    /* Lien vers Google Maps à la place d'une carte intégrée : aucun traceur tant qu'on ne clique pas */
+    .map { position: relative; display: block; border-radius: var(--radius); overflow: hidden; min-height: 360px; background: var(--dark); text-decoration: none; color: #fff; }
+    .map img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: .55; transition: transform .6s ease, opacity .3s; }
+    .map:hover img { transform: scale(1.05); opacity: .45; }
+    .map-label { position: absolute; inset: 0; display: grid; place-content: center; justify-items: center; gap: 12px; text-align: center; padding: 16px; }
+    .map-label svg { color: #e3c9a4; }
+    .map-label strong { font-family: "Cormorant Garamond", serif; font-size: 1.6rem; font-weight: 600; }
     @media (max-width: 820px) { .info { grid-template-columns: 1fr; } }
 
     /* Commander */
@@ -511,10 +514,14 @@
         </dl>
         <p style="margin-top:24px"><a class="btn btn-primary" href="https://www.google.com/maps/search/?api=1&query=SH+COFFEE+1+Rue+Francis+Combe+95000+Cergy" target="_blank" rel="noopener">Itinéraire</a></p>
       </div>
-      <div class="map">
-        <iframe title="Carte SH Coffee" loading="lazy" referrerpolicy="no-referrer-when-downgrade"
-          src="https://maps.google.com/maps?q=SH%20COFFEE%2C%201%20Rue%20Francis%20Combe%2C%2095000%20Cergy&z=16&output=embed"></iframe>
-      </div>
+      <a class="map" href="https://www.google.com/maps/search/?api=1&query=SH+COFFEE+1+Rue+Francis+Combe+95000+Cergy" target="_blank" rel="noopener">
+        <img src="images/vitrine-horaires.jpg" alt="" loading="lazy">
+        <span class="map-label">
+          <svg viewBox="0 0 24 24" width="28" height="28" fill="currentColor" aria-hidden="true"><path d="M12 2a7 7 0 0 0-7 7c0 5.25 7 13 7 13s7-7.75 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z"/></svg>
+          <strong>1 Rue Francis Combe, Cergy</strong>
+          <span class="btn btn-primary">Voir sur Google Maps</span>
+        </span>
+      </a>
     </div>
   </div>
 </section>
@@ -537,7 +544,7 @@
       <a href="https://www.instagram.com/sh.coffee95/" target="_blank" rel="noopener" aria-label="Instagram @sh.coffee95"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg></a>
       <a href="https://www.tiktok.com/@shcoffee_" target="_blank" rel="noopener" aria-label="TikTok @shcoffee_"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true"><path d="M12.53.02C13.84 0 15.14.01 16.44 0c.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.15 1.07-.14 1.61.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 2.19-.66 2.77-1.61.19-.33.4-.67.41-1.06.1-1.79.06-3.57.07-5.36.01-4.03-.01-8.05.02-12.07z"/></svg></a>
     </div>
-    <div>© SH Coffee · 1 Rue Francis Combe, 95000 Cergy</div>
+    <div>© SH Coffee · 1 Rue Francis Combe, 95000 Cergy · <a href="mentions-legales.html">Mentions légales</a></div>
   </div>
 </footer>
 
