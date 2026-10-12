@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>SH Coffee — Cergy</title>
   <meta name="description" content="SH COFFEE, cafétéria moderne à Cergy pensée pour les amateurs de pauses gourmandes : brioches garnies, cookies, pâtisseries, boissons. Sur place, à emporter ou en livraison.">
+  <link rel="icon" href="favicon.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
@@ -33,7 +34,7 @@
     header { position: sticky; top: 0; z-index: 10; background: rgba(246,242,236,.92); backdrop-filter: blur(8px); border-bottom: 1px solid #e6ddd1; }
     .nav { display: flex; align-items: center; justify-content: space-between; height: 64px; }
     .logo { font-family: "Cormorant Garamond", serif; font-size: 1.6rem; font-weight: 600; text-decoration: none; letter-spacing: .04em; }
-    .logo span { color: var(--accent); }
+    .logo img { height: 48px; width: auto; mix-blend-mode: multiply; }
     .nav ul { display: flex; gap: 24px; list-style: none; margin: 0; padding: 0; }
     .nav ul a { text-decoration: none; font-size: .95rem; color: var(--muted); }
     .nav ul a:hover { color: var(--text); }
@@ -101,7 +102,7 @@
 
 <header>
   <div class="container nav">
-    <a href="#" class="logo">SH <span>Coffee</span></a>
+    <a href="#" class="logo"><img src="images/logo.png" alt="SH Coffee"></a>
     <ul>
       <li><a href="#a-propos">À propos</a></li>
       <li><a href="#specialites">Spécialités</a></li>
@@ -205,8 +206,7 @@
     <h2>Commandez en ligne</h2>
     <p>Faites-vous livrer ou passez commande à emporter.</p>
     <div class="actions">
-      <!-- TODO : remplacer par le lien Uber Eats exact de SH Coffee -->
-      <a href="https://www.ubereats.com/fr/city/cergy-idf" class="btn btn-primary" target="_blank" rel="noopener">Uber Eats</a>
+      <a href="https://www.ubereats.com/fr/store/sh-coffee/3UKWVB1ZSmG7wlAD5Hk4nA" class="btn btn-primary" target="_blank" rel="noopener">Uber Eats</a>
       <a href="tel:+33698521729" class="btn btn-ghost">Appeler</a>
     </div>
   </div>
