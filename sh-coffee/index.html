@@ -155,7 +155,7 @@
 
     /* About */
     .about { display: grid; grid-template-columns: 1fr 1fr; gap: 56px; align-items: center; }
-    .about img { border-radius: var(--radius); aspect-ratio: 3/2; object-fit: cover; width: 100%; }
+    .about img { border-radius: var(--radius); aspect-ratio: 3/4; object-fit: cover; width: 100%; max-width: 360px; justify-self: center; box-shadow: 0 20px 40px rgba(0,0,0,.18); }
     .pills { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 20px; }
     .pill { background: var(--surface); border: 1px solid #e6ddd1; padding: 6px 14px; border-radius: 999px; font-size: .88rem; }
     @media (max-width: 820px) { .about { grid-template-columns: 1fr; gap: 32px; } }
@@ -269,8 +269,8 @@
   <div class="hero-slides" aria-hidden="true">
     <div class="slide" style="background-image:url('images/salle.jpg')"></div>
     <div class="slide" style="background-image:url('images/cookie-poele.jpg')"></div>
+    <div class="slide" style="background-image:url('images/interieur.jpg')"></div>
     <div class="slide" style="background-image:url('images/pain-perdu.jpg')"></div>
-    <div class="slide" style="background-image:url('images/brioche-garnie.jpg')"></div>
   </div>
   <div class="bubbles" aria-hidden="true">
     <img class="bubble b1" src="images/matcha-creme-brulee.jpg" alt="">
@@ -312,7 +312,7 @@
         <span class="pill">10–20 € / pers.</span>
       </div>
     </div>
-    <img class="reveal" style="--d:.15s" src="images/brioche-garnie.jpg" alt="Brioche garnie de jambon, fromage et roquette, servie avec une salade" loading="lazy">
+    <img class="reveal" style="--d:.15s" src="images/interieur.jpg" alt="La salle de SH Coffee, avec son mur au logo éclairé" loading="lazy">
   </div>
 </section>
 
