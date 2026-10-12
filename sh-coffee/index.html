@@ -62,7 +62,7 @@
     footer .social { justify-content: center; margin-bottom: 14px; }
 
     /* Header */
-    header { position: sticky; top: 0; z-index: 10; background: rgba(246,242,236,.92); backdrop-filter: blur(8px); border-bottom: 1px solid #e6ddd1; }
+    header { position: sticky; top: 0; z-index: 10; background: rgba(246,242,236,.98); backdrop-filter: blur(8px); border-bottom: 1px solid #e6ddd1; }
     .nav { display: flex; align-items: center; justify-content: space-between; height: 64px; }
     .logo { font-family: "Cormorant Garamond", serif; font-size: 1.6rem; font-weight: 600; text-decoration: none; letter-spacing: .04em; }
     .logo img { height: 48px; width: auto; mix-blend-mode: multiply; }
@@ -159,6 +159,16 @@
     .pills { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 20px; }
     .pill { background: var(--surface); border: 1px solid #e6ddd1; padding: 6px 14px; border-radius: 999px; font-size: .88rem; }
     @media (max-width: 820px) { .about { grid-template-columns: 1fr; gap: 32px; } }
+
+    /* Ambiance */
+    .ambiance { background: var(--dark); color: #fff; }
+    .ambiance .section-head p { color: #cfc4b8; }
+    .ambiance .eyebrow { color: #e3c9a4; }
+    .gallery { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+    .gallery figure { margin: 0; border-radius: var(--radius); overflow: hidden; }
+    .gallery img { width: 100%; aspect-ratio: 3/4; object-fit: cover; transition: transform .6s ease; }
+    .gallery figure:hover img { transform: scale(1.06); }
+    @media (max-width: 820px) { .gallery { grid-template-columns: 1fr 1fr; } }
 
     /* Spécialités */
     .specials { background: var(--surface); }
@@ -267,9 +277,9 @@
 
 <section class="hero">
   <div class="hero-slides" aria-hidden="true">
-    <div class="slide" style="background-image:url('images/salle.jpg')"></div>
+    <div class="slide" style="background-image:url('images/salle-2.jpg')"></div>
     <div class="slide" style="background-image:url('images/cookie-poele.jpg')"></div>
-    <div class="slide" style="background-image:url('images/interieur.jpg')"></div>
+    <div class="slide" style="background-image:url('images/salle-1.jpg')"></div>
     <div class="slide" style="background-image:url('images/pain-perdu.jpg')"></div>
   </div>
   <div class="bubbles" aria-hidden="true">
@@ -311,7 +321,23 @@
         <span class="pill">Livraison</span>
       </div>
     </div>
-    <img class="reveal" style="--d:.15s" src="images/interieur.jpg" alt="La salle de SH Coffee, avec son mur au logo éclairé" loading="lazy">
+    <img class="reveal" style="--d:.15s" src="images/salle-1.jpg" alt="La salle de SH Coffee, avec son mur au logo éclairé" loading="lazy">
+  </div>
+</section>
+
+<section id="ambiance" class="ambiance">
+  <div class="container">
+    <div class="section-head reveal">
+      <div class="eyebrow">Le lieu</div>
+      <h2>L'ambiance</h2>
+      <p>Murs texturés, lumière douce et fauteuils enveloppants : un cadre cosy pour prendre son temps, jusque tard dans la nuit.</p>
+    </div>
+    <div class="gallery">
+      <figure class="reveal" style="--d:0s"><img src="images/salle-2.jpg" alt="Tables rondes devant le mur au logo SH Coffee éclairé" loading="lazy"></figure>
+      <figure class="reveal" style="--d:.12s"><img src="images/salle.jpg" alt="Brioches, cup et boissons servies en salle" loading="lazy"></figure>
+      <figure class="reveal" style="--d:.24s"><img src="images/salle-3.jpg" alt="Mange-debout et tabourets le long du mur" loading="lazy"></figure>
+      <figure class="reveal" style="--d:.36s"><img src="images/vitrine-horaires.jpg" alt="Les horaires affichés sur la porte vitrée" loading="lazy"></figure>
+    </div>
   </div>
 </section>
 
