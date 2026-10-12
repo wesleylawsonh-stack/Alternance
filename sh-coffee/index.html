@@ -6,6 +6,7 @@
   <title>SH Coffee — Cergy</title>
   <meta name="description" content="SH COFFEE, cafétéria moderne à Cergy pensée pour les amateurs de pauses gourmandes : brioches garnies, cookies, pâtisseries, boissons. Sur place, à emporter ou en livraison.">
   <link rel="icon" href="favicon.png">
+  <script>document.documentElement.classList.add("js");</script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
@@ -41,16 +42,79 @@
     @media (max-width: 680px) { .nav ul { display: none; } }
 
     /* Buttons */
-    .btn { display: inline-block; padding: 12px 22px; border-radius: 999px; text-decoration: none; font-weight: 600; font-size: .95rem; transition: .2s; }
+    .btn:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,0,0,.18); }
+    .btn { display: inline-block; padding: 12px 22px; border-radius: 999px; text-decoration: none; font-weight: 600; font-size: .95rem; transition: .25s; }
     .btn-primary { background: var(--accent); color: #fff; }
     .btn-primary:hover { background: var(--accent-dark); }
     .btn-ghost { border: 1.5px solid currentColor; }
     .btn-ghost:hover { background: rgba(255,255,255,.12); }
 
     /* Hero */
-    .hero { position: relative; min-height: min(78vh, 720px); display: grid; place-items: center; text-align: center; color: #fff; background: var(--dark) url("images/salle.jpg") center/cover no-repeat; }
-    .hero::before { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(20,16,14,.55), rgba(20,16,14,.75)); }
-    .hero .content { position: relative; padding: 80px 16px; }
+    .hero { position: relative; overflow: hidden; min-height: min(88vh, 780px); display: grid; place-items: center; text-align: center; color: #fff; background: var(--dark); }
+    .hero::before { content: ""; position: absolute; inset: 0; z-index: 1; background: radial-gradient(ellipse at center, rgba(20,16,14,.45), rgba(20,16,14,.85)); }
+    .hero .content { position: relative; z-index: 3; padding: 80px 16px; }
+
+    /* Diaporama d'arrière-plan : fondu enchaîné + zoom lent */
+    .hero-slides .slide { position: absolute; inset: -4%; background: center/cover no-repeat; opacity: 0; filter: blur(2px); animation: slide 24s infinite; }
+    .hero-slides .slide:nth-child(2) { animation-delay: 6s; }
+    .hero-slides .slide:nth-child(3) { animation-delay: 12s; }
+    .hero-slides .slide:nth-child(4) { animation-delay: 18s; }
+    @keyframes slide {
+      0% { opacity: 0; transform: scale(1); }
+      6% { opacity: 1; }
+      25% { opacity: 1; }
+      33% { opacity: 0; transform: scale(1.12); }
+      100% { opacity: 0; }
+    }
+
+    /* Photos flottantes */
+    .bubbles { position: absolute; inset: 0; z-index: 2; pointer-events: none; }
+    .bubble { position: absolute; border-radius: 50%; object-fit: cover; border: 3px solid rgba(255,255,255,.85); box-shadow: 0 12px 30px rgba(0,0,0,.35); opacity: 0; animation: pop .8s ease-out forwards, float 6s ease-in-out infinite; }
+    .b1 { width: 130px; height: 130px; left: 7%; top: 18%; animation-delay: 1s, 1.8s; }
+    .b2 { width: 105px; height: 105px; left: 12%; bottom: 14%; animation-delay: 1.2s, 2.6s; }
+    .b3 { width: 110px; height: 110px; right: 8%; top: 22%; animation-delay: 1.4s, 2.2s; }
+    .b4 { width: 125px; height: 125px; right: 11%; bottom: 12%; animation-delay: 1.6s, 3s; }
+    @keyframes pop { from { opacity: 0; transform: scale(.4); } to { opacity: 1; transform: scale(1); } }
+    @keyframes float { 0%, 100% { transform: translateY(0) rotate(0); } 50% { transform: translateY(-14px) rotate(3deg); } }
+    @media (max-width: 900px) { .bubble { display: none; } }
+
+    /* Apparition du texte */
+    .anim { opacity: 0; transform: translateY(24px); animation: rise .9s cubic-bezier(.2,.7,.2,1) forwards; animation-delay: var(--d, 0s); }
+    @keyframes rise { to { opacity: 1; transform: none; } }
+    .stars { color: #f2c46d; letter-spacing: 2px; }
+
+    /* Mot qui change */
+    .rotator { display: inline-grid; vertical-align: bottom; text-align: left; color: #e3c9a4; font-weight: 600; }
+    .rotator span { grid-area: 1 / 1; opacity: 0; animation: word 10s infinite; }
+    .rotator span:nth-child(2) { animation-delay: 2.5s; }
+    .rotator span:nth-child(3) { animation-delay: 5s; }
+    .rotator span:nth-child(4) { animation-delay: 7.5s; }
+    @keyframes word { 0% { opacity: 0; transform: translateY(10px); } 4%, 22% { opacity: 1; transform: none; } 26%, 100% { opacity: 0; transform: translateY(-10px); } }
+
+    /* Indicateur de défilement */
+    .scroll-hint { position: absolute; z-index: 3; bottom: 26px; left: 50%; transform: translateX(-50%); width: 26px; height: 42px; border: 2px solid rgba(255,255,255,.7); border-radius: 14px; }
+    .scroll-hint span { position: absolute; left: 50%; top: 8px; width: 4px; height: 8px; margin-left: -2px; border-radius: 2px; background: #fff; animation: wheel 1.8s ease-in-out infinite; }
+    @keyframes wheel { 0% { opacity: 0; transform: translateY(0); } 30% { opacity: 1; } 100% { opacity: 0; transform: translateY(14px); } }
+
+    /* Bandeau défilant */
+    .marquee { overflow: hidden; background: var(--accent); color: #fff; padding: 14px 0; }
+    .marquee-track { display: flex; gap: 28px; width: max-content; animation: marquee 35s linear infinite; font-family: "Cormorant Garamond", serif; font-size: 1.35rem; font-weight: 600; white-space: nowrap; }
+    @keyframes marquee { to { transform: translateX(-50%); } }
+
+    /* Reflet sur le bouton Commander */
+    .btn-shine { position: relative; overflow: hidden; }
+    .btn-shine::after { content: ""; position: absolute; top: 0; left: -60%; width: 40%; height: 100%; background: linear-gradient(100deg, transparent, rgba(255,255,255,.45), transparent); transform: skewX(-20deg); animation: shine 4s ease-in-out 2s infinite; }
+    @keyframes shine { 0% { left: -60%; } 30%, 100% { left: 130%; } }
+
+    /* Apparition des sections au défilement */
+    .js .reveal { opacity: 0; transform: translateY(36px); transition: opacity .8s ease, transform .8s cubic-bezier(.2,.7,.2,1); transition-delay: var(--d, 0s); }
+    .js .reveal.visible { opacity: 1; transform: none; }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation: none !important; transition: none !important; }
+      .anim, .bubble, .hero-slides .slide:first-child, .rotator span:first-child { opacity: 1 !important; transform: none !important; }
+      .js .reveal { opacity: 1; transform: none; }
+    }
     .hero h1 { font-size: clamp(3rem, 9vw, 5.5rem); letter-spacing: .04em; }
     .hero p { font-size: 1.15rem; max-width: 560px; margin: 0 auto 28px; color: #eee5da; }
     .hero .eyebrow { color: #e3c9a4; }
@@ -157,21 +221,41 @@
 </header>
 
 <section class="hero">
+  <div class="hero-slides" aria-hidden="true">
+    <div class="slide" style="background-image:url('images/salle.jpg')"></div>
+    <div class="slide" style="background-image:url('images/cookie-poele.jpg')"></div>
+    <div class="slide" style="background-image:url('images/pain-perdu.jpg')"></div>
+    <div class="slide" style="background-image:url('images/brioche-garnie.jpg')"></div>
+  </div>
+  <div class="bubbles" aria-hidden="true">
+    <img class="bubble b1" src="images/matcha-creme-brulee.jpg" alt="">
+    <img class="bubble b2" src="images/toast-savoyard.jpg" alt="">
+    <img class="bubble b3" src="images/lita.jpg" alt="">
+    <img class="bubble b4" src="images/cheesy-melt.jpg" alt="">
+  </div>
   <div class="content">
-    <div class="eyebrow">Cafétéria · Cergy</div>
-    <h1>SH Coffee</h1>
-    <div class="rating">★ 4,4 sur Google · 145 avis · Ouvert tard : jusqu'à 4h le vendredi et le samedi</div>
-    <p>Une cafétéria moderne pensée pour les amateurs de pauses gourmandes.</p>
-    <div class="actions">
-      <a href="#commander" class="btn btn-primary">Commander</a>
-      <a href="#infos" class="btn btn-ghost">Nous trouver</a>
+    <div class="eyebrow anim" style="--d:.1s">Cafétéria · Cergy</div>
+    <h1 class="anim" style="--d:.25s">SH Coffee</h1>
+    <div class="rating anim" style="--d:.45s"><span class="stars">★★★★★</span> 4,4 sur Google · 145 avis</div>
+    <p class="anim" style="--d:.6s">Une cafétéria moderne pensée pour les amateurs de pauses <span class="rotator"><span>gourmandes</span><span>sucrées</span><span>salées</span><span>fraîches</span></span></p>
+    <div class="actions anim" style="--d:.8s">
+      <a href="#commander" class="btn btn-primary btn-shine">Commander</a>
+      <a href="#carte" class="btn btn-ghost">Voir la carte</a>
     </div>
   </div>
+  <a href="#a-propos" class="scroll-hint" aria-label="Descendre"><span></span></a>
 </section>
+
+<div class="marquee" aria-hidden="true">
+  <div class="marquee-track">
+    <span>Brioches perdues</span><span>✦</span><span>Toasts gourmands</span><span>✦</span><span>Matcha crème brûlée</span><span>✦</span><span>Bubble tea</span><span>✦</span><span>Ouvert jusqu'à 4h le vendredi et le samedi</span><span>✦</span><span>Sur place · À emporter · Livraison</span><span>✦</span>
+    <span>Brioches perdues</span><span>✦</span><span>Toasts gourmands</span><span>✦</span><span>Matcha crème brûlée</span><span>✦</span><span>Bubble tea</span><span>✦</span><span>Ouvert jusqu'à 4h le vendredi et le samedi</span><span>✦</span><span>Sur place · À emporter · Livraison</span><span>✦</span>
+  </div>
+</div>
 
 <section id="a-propos">
   <div class="container about">
-    <div>
+    <div class="reveal">
       <div class="eyebrow">Bienvenue</div>
       <h2>Le spot gourmand de Cergy</h2>
       <p>À deux pas du centre, SH Coffee vous accueille dans un cadre doux et lumineux pour une pause sucrée ou salée : brioches garnies, cookies chauds, pâtisseries maison et boissons fraîches comme le matcha.</p>
@@ -183,31 +267,31 @@
         <span class="pill">10–20 € / pers.</span>
       </div>
     </div>
-    <img src="images/brioche-garnie.jpg" alt="Brioche garnie de jambon, fromage et roquette, servie avec une salade" loading="lazy">
+    <img class="reveal" style="--d:.15s" src="images/brioche-garnie.jpg" alt="Brioche garnie de jambon, fromage et roquette, servie avec une salade" loading="lazy">
   </div>
 </section>
 
 <section id="specialites" class="specials">
   <div class="container">
-    <div class="section-head">
+    <div class="section-head reveal">
       <div class="eyebrow">À la carte</div>
       <h2>Nos spécialités</h2>
       <p>Quelques incontournables de la maison.</p>
     </div>
     <div class="grid">
-      <article class="card">
+      <article class="card reveal" style="--d:0.00s">
         <div class="img-wrap"><img src="images/brioche-garnie.jpg" alt="Brioche garnie" loading="lazy"></div>
         <div class="body"><h3>Brioche garnie</h3><p>Brioche moelleuse, charcuterie, sauce crémeuse et roquette, servie avec sa salade.</p></div>
       </article>
-      <article class="card">
+      <article class="card reveal" style="--d:0.12s">
         <div class="img-wrap"><img src="images/cookie-poele.jpg" alt="Cookie géant en poêlon avec boule de glace" loading="lazy"></div>
         <div class="body"><h3>Cookie en poêlon</h3><p>Cookie chaud aux pépites de chocolat, boule de glace vanille et nappages gourmands.</p></div>
       </article>
-      <article class="card">
+      <article class="card reveal" style="--d:0.24s">
         <div class="img-wrap"><img src="images/pain-perdu.jpg" alt="Pain perdu au caramel et pommes, chantilly" loading="lazy"></div>
         <div class="body"><h3>Pain perdu caramel</h3><p>Brioche dorée, caramel, pommes fondantes et chantilly.</p></div>
       </article>
-      <article class="card">
+      <article class="card reveal" style="--d:0.36s">
         <div class="img-wrap"><img src="images/pavlova.jpg" alt="Pavlova aux fruits rouges" loading="lazy"></div>
         <div class="body"><h3>Pavlova fruits rouges</h3><p>Meringue légère, coulis et fruits rouges frais.</p></div>
       </article>
@@ -217,7 +301,7 @@
 
 <section id="carte">
   <div class="container">
-    <div class="section-head">
+    <div class="section-head reveal">
       <div class="eyebrow">Sur place, à emporter ou en livraison</div>
       <h2>La carte</h2>
     </div>
@@ -231,19 +315,19 @@
     <div class="carte-content">
     <h3 class="favs-title" id="cat-favoris">Les plus aimés</h3>
     <div class="favs">
-      <article class="fav">
+      <article class="fav reveal" style="--d:0.00s">
         <div class="fav-img"><span class="badge">N° 1 des clients</span><img src="images/toast-savoyard.jpg" alt="Toast savoyard" loading="lazy"></div>
         <div class="fav-body"><h4>Toast savoyard</h4><span class="price">14,80 €</span></div>
       </article>
-      <article class="fav">
+      <article class="fav reveal" style="--d:0.12s">
         <div class="fav-img"><span class="badge">N° 2 des clients</span><img src="images/lita.jpg" alt="Lita" loading="lazy"></div>
         <div class="fav-body"><h4>Lita</h4><span class="price">9,00 €</span></div>
       </article>
-      <article class="fav">
+      <article class="fav reveal" style="--d:0.24s">
         <div class="fav-img"><span class="badge">N° 3 des clients</span><img src="images/matcha-creme-brulee.jpg" alt="Matcha crème brûlée" loading="lazy"></div>
         <div class="fav-body"><h4>Matcha crème brûlée</h4><span class="price">9,00 €</span></div>
       </article>
-      <article class="fav">
+      <article class="fav reveal" style="--d:0.36s">
         <div class="fav-img"><img src="images/cheesy-melt.jpg" alt="Le Cheesy Melt" loading="lazy"></div>
         <div class="fav-body"><h4>Le Cheesy Melt</h4><span class="price">14,50 €</span></div>
       </article>
@@ -307,7 +391,7 @@
 
 <section id="infos">
   <div class="container">
-    <div class="section-head">
+    <div class="section-head reveal">
       <div class="eyebrow">Venir nous voir</div>
       <h2>Infos pratiques</h2>
     </div>
@@ -360,6 +444,16 @@
 </footer>
 
 <script>
+  // Apparition des éléments quand ils entrent à l'écran
+  if ("IntersectionObserver" in window) {
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add("visible"); io.unobserve(e.target); } });
+    }, { threshold: 0.15 });
+    document.querySelectorAll(".reveal").forEach(function (el) { io.observe(el); });
+  } else {
+    document.querySelectorAll(".reveal").forEach(function (el) { el.classList.add("visible"); });
+  }
+
   // Met en avant le jour courant dans les horaires (getDay : 0 = dimanche)
   var rows = document.querySelectorAll(".hours tr");
   var i = (new Date().getDay() + 6) % 7;
