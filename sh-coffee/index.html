@@ -48,7 +48,7 @@
     .btn-ghost:hover { background: rgba(255,255,255,.12); }
 
     /* Hero */
-    .hero { position: relative; min-height: 78vh; display: grid; place-items: center; text-align: center; color: #fff; background: var(--dark) url("images/salle.jpg") center/cover no-repeat; }
+    .hero { position: relative; min-height: min(78vh, 720px); display: grid; place-items: center; text-align: center; color: #fff; background: var(--dark) url("images/salle.jpg") center/cover no-repeat; }
     .hero::before { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(20,16,14,.55), rgba(20,16,14,.75)); }
     .hero .content { position: relative; padding: 80px 16px; }
     .hero h1 { font-size: clamp(3rem, 9vw, 5.5rem); letter-spacing: .04em; }
@@ -79,9 +79,22 @@
     .card h3 { font-size: 1.5rem; margin-bottom: .2em; }
     .card p { margin: 0; color: var(--muted); font-size: .95rem; }
 
+    /* Carte */
+    .menu-cat { margin-bottom: 48px; }
+    .menu-cat h3 { font-size: 1.9rem; border-bottom: 1px solid #e6ddd1; padding-bottom: 8px; margin-bottom: 20px; }
+    .menu { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 18px 48px; }
+    .menu-line { display: flex; align-items: baseline; gap: 8px; }
+    .menu-line .name { font-weight: 600; }
+    .menu-line .dots { flex: 1; border-bottom: 1px dotted #c9bba9; transform: translateY(-4px); }
+    .menu-line .price { font-weight: 600; color: var(--accent-dark); white-space: nowrap; }
+    .menu p { margin: 2px 0 0; color: var(--muted); font-size: .9rem; }
+    .menu-note { text-align: center; color: var(--muted); font-size: .85rem; }
+    @media (max-width: 720px) { .menu { grid-template-columns: 1fr; } }
+
     /* Infos */
     .info { display: grid; grid-template-columns: 1fr 1.2fr; gap: 40px; }
-    .info-card { background: var(--surface); border-radius: var(--radius); padding: 32px; }
+    #infos { background: var(--surface); }
+    .info-card { background: var(--bg); border-radius: var(--radius); padding: 32px; }
     .info-card dl { margin: 0; }
     .info-card dt { font-weight: 600; margin-top: 18px; }
     .info-card dt:first-child { margin-top: 0; }
@@ -110,6 +123,7 @@
     <ul>
       <li><a href="#a-propos">À propos</a></li>
       <li><a href="#specialites">Spécialités</a></li>
+      <li><a href="#carte">Carte</a></li>
       <li><a href="#infos">Infos pratiques</a></li>
       <li><a href="#commander">Commander</a></li>
     </ul>
@@ -172,6 +186,67 @@
         <div class="body"><h3>Pavlova fruits rouges</h3><p>Meringue légère, coulis et fruits rouges frais.</p></div>
       </article>
     </div>
+  </div>
+</section>
+
+<section id="carte">
+  <div class="container">
+    <div class="section-head">
+      <div class="eyebrow">Sur place, à emporter ou en livraison</div>
+      <h2>La carte</h2>
+    </div>
+    <div class="menu-cat">
+      <h3>Sucrés</h3>
+      <ul class="menu">
+        <li><div class="menu-line"><span class="name">Brioche pistacho</span><span class="dots"></span><span class="price">9,00 €</span></div><p>Brioche pistache, crème pistache</p></li>
+        <li><div class="menu-line"><span class="name">Brioche crazy</span><span class="dots"></span><span class="price">10,00 €</span></div><p>Brioche crème brûlée</p></li>
+        <li><div class="menu-line"><span class="name">Brioche à composer</span><span class="dots"></span><span class="price">6,00 €</span></div><p>Brioche à composer au choix</p></li>
+        <li><div class="menu-line"><span class="name">Brioche pommie</span><span class="dots"></span><span class="price">10,00 €</span></div></li>
+        <li><div class="menu-line"><span class="name">Brioche banane flambée</span><span class="dots"></span><span class="price">10,00 €</span></div><p>Brioche perdue, chantilly, banane flambée, caramel</p></li>
+        <li><div class="menu-line"><span class="name">Pain perdu tiramisu</span><span class="dots"></span><span class="price">10,00 €</span></div><p>Brioche perdue, café, chantilly, chocolat</p></li>
+        <li><div class="menu-line"><span class="name">Brioche Dubaï</span><span class="dots"></span><span class="price">10,00 €</span></div><p>Brioche perdue, chantilly, fraise, pistache, chocolat</p></li>
+        <li><div class="menu-line"><span class="name">Cup</span><span class="dots"></span><span class="price">5,00 €</span></div><p>Base au choix</p></li>
+        <li><div class="menu-line"><span class="name">Cup Dubaï</span><span class="dots"></span><span class="price">10,50 €</span></div></li>
+        <li><div class="menu-line"><span class="name">Bowl sucré</span><span class="dots"></span><span class="price">9,00 €</span></div><p>Base au choix</p></li>
+        <li><div class="menu-line"><span class="name">Citron cake</span><span class="dots"></span><span class="price">4,00 €</span></div></li>
+      </ul>
+    </div>
+    <div class="menu-cat">
+      <h3>Salés</h3>
+      <ul class="menu">
+        <li><div class="menu-line"><span class="name">Grilled cheese</span><span class="dots"></span><span class="price">10,00 €</span></div></li>
+        <li><div class="menu-line"><span class="name">Toast egg</span><span class="dots"></span><span class="price">9,00 €</span></div></li>
+        <li><div class="menu-line"><span class="name">Poulet pesto</span><span class="dots"></span><span class="price">13,90 €</span></div><p>Poulet, truffe, parmesan, pesto</p></li>
+        <li><div class="menu-line"><span class="name">Toast chicken</span><span class="dots"></span><span class="price">14,20 €</span></div><p>Brioche, poulet, bacon, salade, truffe, parmesan</p></li>
+        <li><div class="menu-line"><span class="name">Toast saumon</span><span class="dots"></span><span class="price">14,90 €</span></div><p>Saumon, concombre, parmesan, roquette</p></li>
+        <li><div class="menu-line"><span class="name">Toast savoyard</span><span class="dots"></span><span class="price">14,80 €</span></div><p>Steak, raclette, lardons, bacon, sauce moutarde-miel</p></li>
+        <li><div class="menu-line"><span class="name">Toast italien</span><span class="dots"></span><span class="price">15,20 €</span></div><p>Brioche, charcuterie, roquette, stracciatella, oignons confits</p></li>
+        <li><div class="menu-line"><span class="name">Le Cheesy Melt</span><span class="dots"></span><span class="price">14,50 €</span></div><p>Steak, salade, cheddar, sauce au choix</p></li>
+        <li><div class="menu-line"><span class="name">Le Milano</span><span class="dots"></span><span class="price">17,80 €</span></div><p>Stracciatella, roquette, oignons caramélisés, charcuterie de saison</p></li>
+        <li><div class="menu-line"><span class="name">Panuzzo</span><span class="dots"></span><span class="price">17,90 €</span></div><p>Stracciatella, double charcuterie, pesto</p></li>
+        <li><div class="menu-line"><span class="name">Bowl salé</span><span class="dots"></span><span class="price">13,20 €</span></div></li>
+        <li><div class="menu-line"><span class="name">Toast italien et frites</span><span class="dots"></span><span class="price">19,80 €</span></div><p>Toast charcuterie, stracciatella, roquette, oignons confits</p></li>
+        <li><div class="menu-line"><span class="name">Toast savoyard et frites</span><span class="dots"></span><span class="price">21,50 €</span></div></li>
+        <li><div class="menu-line"><span class="name">Frites</span><span class="dots"></span><span class="price">3,00 €</span></div></li>
+      </ul>
+    </div>
+    <div class="menu-cat">
+      <h3>Boissons fraîches</h3>
+      <ul class="menu">
+        <li><div class="menu-line"><span class="name">Ice latte</span><span class="dots"></span><span class="price">9,00 €</span></div></li>
+        <li><div class="menu-line"><span class="name">Passion Paradise</span><span class="dots"></span><span class="price">9,00 €</span></div><p>Limonade passion, crème passion</p></li>
+        <li><div class="menu-line"><span class="name">Lita</span><span class="dots"></span><span class="price">9,00 €</span></div><p>Limonade, rose, framboise, litchi</p></li>
+        <li><div class="menu-line"><span class="name">Violetta</span><span class="dots"></span><span class="price">7,00 €</span></div><p>Citronnade, violette</p></li>
+        <li><div class="menu-line"><span class="name">Dragon Sunset</span><span class="dots"></span><span class="price">9,00 €</span></div><p>Citronnade, mangue, thé, fruit du dragon frais</p></li>
+        <li><div class="menu-line"><span class="name">Matcha crème brûlée</span><span class="dots"></span><span class="price">9,00 €</span></div></li>
+        <li><div class="menu-line"><span class="name">Fresh fusion</span><span class="dots"></span><span class="price">9,00 €</span></div></li>
+        <li><div class="menu-line"><span class="name">Bubble tea</span><span class="dots"></span><span class="price">8,00 €</span></div><p>Boba au choix : mangue, passion, litchi, fraise, pêche. Sirop au choix : mangue, cassis, litchi, framboise, fraise, passion, melon, thé vert pêche, rose, ananas, pêche, grenadine</p></li>
+        <li><div class="menu-line"><span class="name">Passiona</span><span class="dots"></span><span class="price">4,50 €</span></div><p>Mangue, passion, grenade</p></li>
+        <li><div class="menu-line"><span class="name">Refreshe</span><span class="dots"></span><span class="price">5,00 €</span></div><p>Sirop, eau gazeuse</p></li>
+        <li><div class="menu-line"><span class="name">Eau</span><span class="dots"></span><span class="price">3,00 €</span></div></li>
+      </ul>
+    </div>
+    <p class="menu-note">Prix indicatifs, susceptibles d'évoluer.</p>
   </div>
 </section>
 
