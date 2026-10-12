@@ -87,6 +87,10 @@
     .info-card dt:first-child { margin-top: 0; }
     .info-card dd { margin: 4px 0 0; color: var(--muted); }
     .info-card dd a { color: var(--accent-dark); }
+    .hours { border-collapse: collapse; width: 100%; max-width: 300px; }
+    .hours td { padding: 3px 0; }
+    .hours td:last-child { text-align: right; }
+    .hours tr.today td { color: var(--text); font-weight: 600; }
     .map { border-radius: var(--radius); overflow: hidden; min-height: 360px; background: #e6ddd1; }
     .map iframe { width: 100%; height: 100%; min-height: 360px; border: 0; }
     @media (max-width: 820px) { .info { grid-template-columns: 1fr; } }
@@ -116,7 +120,7 @@
   <div class="content">
     <div class="eyebrow">Cafétéria · Cergy</div>
     <h1>SH Coffee</h1>
-    <div class="rating">★ 4,4 sur Google · 145 avis</div>
+    <div class="rating">★ 4,4 sur Google · 145 avis · Ouvert jusqu'à 2h30, 4h le week-end</div>
     <p>Une cafétéria moderne pensée pour les amateurs de pauses gourmandes.</p>
     <div class="actions">
       <a href="#commander" class="btn btn-primary">Commander</a>
@@ -185,8 +189,17 @@
           <dt>Téléphone</dt>
           <dd><a href="tel:+33698521729">06 98 52 17 29</a></dd>
           <dt>Horaires</dt>
-          <!-- TODO : compléter les horaires exacts de chaque jour -->
-          <dd>Ouverture à 11h30 — horaires détaillés à venir</dd>
+          <dd>
+            <table class="hours">
+              <tr><td>Lundi</td><td>Fermé</td></tr>
+              <tr><td>Mardi</td><td>11h30 – 2h30</td></tr>
+              <tr><td>Mercredi</td><td>11h30 – 2h30</td></tr>
+              <tr><td>Jeudi</td><td>11h30 – 2h30</td></tr>
+              <tr><td>Vendredi</td><td>15h30 – 4h00</td></tr>
+              <tr><td>Samedi</td><td>11h30 – 4h00</td></tr>
+              <tr><td>Dimanche</td><td>11h30 – 2h30</td></tr>
+            </table>
+          </dd>
           <dt>Services</dt>
           <dd>Sur place · À emporter · Livraison</dd>
         </dl>
@@ -215,6 +228,13 @@
 <footer>
   <div class="container">© SH Coffee · 1 Rue Francis Combe, 95000 Cergy</div>
 </footer>
+
+<script>
+  // Met en avant le jour courant dans les horaires (getDay : 0 = dimanche)
+  var rows = document.querySelectorAll(".hours tr");
+  var i = (new Date().getDay() + 6) % 7;
+  if (rows[i]) rows[i].classList.add("today");
+</script>
 
 </body>
 </html>
