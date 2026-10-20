@@ -217,6 +217,41 @@
     .fav-body .price { font-weight: 600; color: var(--accent-dark); white-space: nowrap; }
     @media (max-width: 900px) { .favs { grid-template-columns: 1fr 1fr; } }
     .price-info { display: inline-block; margin: 6px 0 0; padding: 6px 14px; border-radius: 999px; background: var(--surface); border: 1px solid #e6ddd1; color: var(--muted); font-size: .88rem; }
+    /* Produits cliquables */
+    .menu li.product { cursor: pointer; border-radius: 12px; margin: -8px; padding: 8px; transition: background .2s; }
+    .menu li.product:hover, .menu li.product:focus-visible { background: var(--surface); outline: none; }
+    .menu li.product > div { min-width: 0; }
+    .menu .more { display: inline-block; margin-top: 4px; font-size: .82rem; font-weight: 600; color: var(--accent-dark); }
+    .fav.product { cursor: pointer; transition: transform .2s, box-shadow .2s; }
+    .fav.product:hover, .fav.product:focus-visible { transform: translateY(-3px); box-shadow: 0 12px 28px rgba(0,0,0,.1); outline: none; }
+
+    /* Fiche produit (ordinateur : fenêtre centrée ; téléphone : panneau qui monte du bas) */
+    .sheet-backdrop { position: fixed; inset: 0; z-index: 60; background: rgba(20,16,14,.55); opacity: 0; pointer-events: none; transition: opacity .25s; }
+    .sheet { position: fixed; z-index: 61; left: 50%; top: 50%; width: min(520px, calc(100% - 32px)); max-height: min(86vh, 760px); display: flex; flex-direction: column; background: var(--bg); border-radius: 20px; box-shadow: 0 30px 80px rgba(0,0,0,.35); overflow: hidden; opacity: 0; pointer-events: none; transform: translate(-50%, -46%) scale(.97); transition: opacity .25s, transform .3s cubic-bezier(.2,.7,.2,1); }
+    .sheet-open .sheet-backdrop { opacity: 1; pointer-events: auto; }
+    .sheet-open .sheet { opacity: 1; pointer-events: auto; transform: translate(-50%, -50%); }
+    .sheet-scroll { overflow-y: auto; overscroll-behavior: contain; }
+    .sheet-img { width: 100%; aspect-ratio: 1 / 1; max-height: 340px; object-fit: cover; display: block; background: #e6ddd1; }
+    .sheet-img.small { width: 160px; height: 160px; margin: 28px auto 0; border-radius: 16px; max-height: none; }
+    .sheet-close { position: absolute; top: 12px; right: 12px; z-index: 2; width: 40px; height: 40px; border-radius: 50%; border: 0; background: rgba(255,255,255,.95); color: var(--text); font-size: 1.5rem; line-height: 1; cursor: pointer; box-shadow: 0 4px 14px rgba(0,0,0,.15); }
+    .sheet-body { padding: 22px 24px 28px; }
+    .sheet-head { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; padding-right: 8px; }
+    .sheet-head h3 { font-size: 1.9rem; margin: 0; }
+    .sheet-price { font-weight: 600; color: var(--accent-dark); white-space: nowrap; font-size: 1.05rem; }
+    .sheet-desc { color: var(--muted); margin: 8px 0 0; }
+    .sheet-group { margin-top: 22px; }
+    .sheet-group-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding-bottom: 8px; border-bottom: 1px solid #e6ddd1; }
+    .sheet-group-head h4 { margin: 0; font-size: 1rem; }
+    .sheet-group-head span { font-size: .78rem; color: var(--muted); background: var(--surface); border: 1px solid #e6ddd1; border-radius: 999px; padding: 2px 10px; white-space: nowrap; }
+    .sheet-group ul { list-style: none; margin: 0; padding: 0; }
+    .sheet-group li { display: flex; justify-content: space-between; gap: 12px; padding: 10px 2px; border-bottom: 1px solid #efe8de; }
+    .sheet-group li span:last-child { color: var(--muted); white-space: nowrap; }
+    .sheet-note { margin: 20px 0 0; font-size: .82rem; color: var(--muted); }
+    @media (max-width: 600px) {
+      .sheet { left: 0; right: 0; top: auto; bottom: 0; width: 100%; max-height: 90vh; border-radius: 20px 20px 0 0; transform: translateY(100%); }
+      .sheet-open .sheet { transform: translateY(0); }
+      .sheet-img { max-height: 300px; }
+    }
     .menu-note { text-align: center; color: var(--muted); font-size: .85rem; }
     @media (max-width: 720px) { .menu { grid-template-columns: 1fr; } }
 
@@ -392,19 +427,19 @@
     <div class="carte-content">
     <h3 class="favs-title" id="cat-favoris">Les plus aimés</h3>
     <div class="favs">
-      <article class="fav reveal" style="--d:0.00s">
+      <article class="fav reveal product" style="--d:0.00s" data-product="Toast savoyard" tabindex="0" role="button" aria-haspopup="dialog">
         <div class="fav-img"><span class="badge">N° 1 des clients</span><img src="images/toast-savoyard.jpg" alt="Toast savoyard" loading="lazy"></div>
         <div class="fav-body"><h4>Toast savoyard</h4><span class="price">12,80 €</span></div>
       </article>
-      <article class="fav reveal" style="--d:0.12s">
+      <article class="fav reveal product" style="--d:0.12s" data-product="Lita" tabindex="0" role="button" aria-haspopup="dialog">
         <div class="fav-img"><span class="badge">N° 2 des clients</span><img src="images/lita.jpg" alt="Lita" loading="lazy"></div>
         <div class="fav-body"><h4>Lita</h4><span class="price">5,80 €</span></div>
       </article>
-      <article class="fav reveal" style="--d:0.24s">
+      <article class="fav reveal product" style="--d:0.24s" data-product="Matcha crème brûlée" tabindex="0" role="button" aria-haspopup="dialog">
         <div class="fav-img"><span class="badge">N° 3 des clients</span><img src="images/matcha-creme-brulee.jpg" alt="Matcha crème brûlée" loading="lazy"></div>
         <div class="fav-body"><h4>Matcha crème brûlée</h4><span class="price">7,00 €</span></div>
       </article>
-      <article class="fav reveal" style="--d:0.36s">
+      <article class="fav reveal product" style="--d:0.36s" data-product="Le Cheesy Melt" tabindex="0" role="button" aria-haspopup="dialog">
         <div class="fav-img"><img src="images/cheesy-melt.jpg" alt="Le Cheesy Melt" loading="lazy"></div>
         <div class="fav-body"><h4>Le Cheesy Melt</h4><span class="price">12,90 €</span></div>
       </article>
@@ -412,80 +447,80 @@
     <div class="menu-cat" id="cat-sales">
       <h3>Salés</h3>
       <ul class="menu">
-        <li class="has-thumb"><img class="thumb" src="images/carte/toast-italien.jpg" alt="Toast italien" loading="lazy"><div><div class="menu-line"><span class="name">Toast italien</span><span class="dots"></span><span class="price">13,90 €</span></div><p>Stracciatella, roquette, oignons caramélisés, parmesan, charcuterie de saison</p></div></li>
-        <li class="has-thumb"><img class="thumb" src="images/carte/toast-saumon.jpg" alt="Toast saumon" loading="lazy"><div><div class="menu-line"><span class="name">Toast saumon</span><span class="dots"></span><span class="price">13,90 €</span></div><p>Cream cheese, sauce concombre, concombre, saumon, parmesan, truffe</p></div></li>
-        <li class="has-thumb"><img class="thumb" src="images/carte/cheesy-melt.jpg" alt="Le Cheesy Melt" loading="lazy"><div><div class="menu-line"><span class="name">Le Cheesy Melt</span><span class="dots"></span><span class="price">12,90 €</span></div><p>Steak, salade, cheddar, sauce au choix</p></div></li>
-        <li class="has-thumb"><img class="thumb" src="images/carte/le-smoked.jpg" alt="Le Smoked" loading="lazy"><div><div class="menu-line"><span class="name">Le Smoked</span><span class="dots"></span><span class="price">12,90 €</span></div></div></li>
-        <li class="has-thumb"><img class="thumb" src="images/carte/poulet-pesto.jpg" alt="Poulet pesto" loading="lazy"><div><div class="menu-line"><span class="name">Poulet pesto</span><span class="dots"></span><span class="price">12,90 €</span></div><p>Poulet mariné, mayonnaise truffe, pesto, parmesan</p></div></li>
-        <li><div class="menu-line"><span class="name">Toast chicken</span><span class="dots"></span><span class="price">12,80 €</span></div><p>Poulet tenders, sauce parmesan, parmesan, salade, bacon</p></li>
-        <li class="has-thumb"><img class="thumb" src="images/carte/toast-savoyard.jpg" alt="Toast savoyard" loading="lazy"><div><div class="menu-line"><span class="name">Toast savoyard</span><span class="dots"></span><span class="price">12,80 €</span></div><p>Steak, raclette, lardons, bacon, sauce moutarde-miel</p></div></li>
-        <li><div class="menu-line"><span class="name">Panuzzo</span><span class="dots"></span><span class="price">12,00 €</span></div><p>Stracciatella, double charcuterie, pesto</p></li>
-        <li><div class="menu-line"><span class="name">Bowl salé</span><span class="dots"></span><span class="price">11,00 €</span></div></li>
-        <li><div class="menu-line"><span class="name">Pink Burger</span><span class="dots"></span><span class="price">10,00 €</span></div></li>
-        <li><div class="menu-line"><span class="name">Brioche croque</span><span class="dots"></span><span class="price">9,00 €</span></div><p>Béchamel, blanc de dinde, mozzarella</p></li>
-        <li class="has-thumb"><img class="thumb" src="images/carte/grilled-cheese.jpg" alt="Grilled cheese" loading="lazy"><div><div class="menu-line"><span class="name">Grilled cheese</span><span class="dots"></span><span class="price">9,00 €</span></div><p>Cheese, crème truffe (avec ou sans bacon)</p></div></li>
-        <li><div class="menu-line"><span class="name">Toast egg</span><span class="dots"></span><span class="price">9,00 €</span></div><p>Œufs brouillés, crème truffe</p></li>
-        <li><div class="menu-line"><span class="name">Frites</span><span class="dots"></span><span class="price">3,00 €</span></div></li>
-        <li><div class="menu-line"><span class="name">Formule toast + frites + boisson</span><span class="dots"></span><span class="price">17,20 €</span></div><p>Toast au choix : Cheesy Melt, Chicken, Italien, Poulet pesto, Savoyard ou Smoked. Boisson au choix : Passiona, Violetta, Refreshe, Dragon Sunset ou Fresh fusion. 17,90 € avec Lita, Bubble tea, Passion Paradise ou Mojito. Avec de l'eau : 17,00 € (Chicken, Cheesy Melt) ou 17,20 € (Italien, Poulet pesto, Savoyard, Smoked).</p></li>
-        <li><div class="menu-line"><span class="name">Formule brioche croque + frites + boisson</span><span class="dots"></span><span class="price">14,20 €</span></div><p>Mêmes boissons au choix. 14,90 € avec Lita, Bubble tea, Passion Paradise ou Mojito, 14,00 € avec de l'eau.</p></li>
+        <li class="product has-thumb" data-product="Toast italien" tabindex="0" role="button" aria-haspopup="dialog"><img class="thumb" src="images/carte/toast-italien.jpg" alt="" loading="lazy"><div><div class="menu-line"><span class="name">Toast italien</span><span class="dots"></span><span class="price">13,90 €</span></div><p>Stracciatella, roquette, oignons caramélisés, parmesan, charcuterie de saison</p></div></li>
+        <li class="product has-thumb" data-product="Toast saumon" tabindex="0" role="button" aria-haspopup="dialog"><img class="thumb" src="images/carte/toast-saumon.jpg" alt="" loading="lazy"><div><div class="menu-line"><span class="name">Toast saumon</span><span class="dots"></span><span class="price">13,90 €</span></div><p>Cream cheese, sauce concombre, concombre, saumon, parmesan, truffe</p></div></li>
+        <li class="product has-thumb" data-product="Le Cheesy Melt" tabindex="0" role="button" aria-haspopup="dialog"><img class="thumb" src="images/carte/cheesy-melt.jpg" alt="" loading="lazy"><div><div class="menu-line"><span class="name">Le Cheesy Melt</span><span class="dots"></span><span class="price">12,90 €</span></div><p>Steak, salade, cheddar, sauce au choix</p></div></li>
+        <li class="product has-thumb" data-product="Le Smoked" tabindex="0" role="button" aria-haspopup="dialog"><img class="thumb" src="images/carte/le-smoked.jpg" alt="" loading="lazy"><div><div class="menu-line"><span class="name">Le Smoked</span><span class="dots"></span><span class="price">12,90 €</span></div></div></li>
+        <li class="product has-thumb" data-product="Poulet pesto" tabindex="0" role="button" aria-haspopup="dialog"><img class="thumb" src="images/carte/poulet-pesto.jpg" alt="" loading="lazy"><div><div class="menu-line"><span class="name">Poulet pesto</span><span class="dots"></span><span class="price">12,90 €</span></div><p>Poulet mariné, mayonnaise truffe, pesto, parmesan</p></div></li>
+        <li class="product" data-product="Toast chicken" tabindex="0" role="button" aria-haspopup="dialog"><div><div class="menu-line"><span class="name">Toast chicken</span><span class="dots"></span><span class="price">12,80 €</span></div><p>Poulet tenders, sauce parmesan, parmesan, salade, bacon</p></div></li>
+        <li class="product has-thumb" data-product="Toast savoyard" tabindex="0" role="button" aria-haspopup="dialog"><img class="thumb" src="images/carte/toast-savoyard.jpg" alt="" loading="lazy"><div><div class="menu-line"><span class="name">Toast savoyard</span><span class="dots"></span><span class="price">12,80 €</span></div><p>Steak, raclette, lardons, bacon, sauce moutarde-miel</p></div></li>
+        <li class="product" data-product="Panuzzo" tabindex="0" role="button" aria-haspopup="dialog"><div><div class="menu-line"><span class="name">Panuzzo</span><span class="dots"></span><span class="price">12,00 €</span></div><p>Stracciatella, double charcuterie, pesto</p></div></li>
+        <li class="product" data-product="Bowl salé" tabindex="0" role="button" aria-haspopup="dialog"><div><div class="menu-line"><span class="name">Bowl salé</span><span class="dots"></span><span class="price">11,00 €</span></div></div></li>
+        <li class="product" data-product="Pink Burger" tabindex="0" role="button" aria-haspopup="dialog"><div><div class="menu-line"><span class="name">Pink Burger</span><span class="dots"></span><span class="price">10,00 €</span></div></div></li>
+        <li class="product" data-product="Brioche croque" tabindex="0" role="button" aria-haspopup="dialog"><div><div class="menu-line"><span class="name">Brioche croque</span><span class="dots"></span><span class="price">9,00 €</span></div><p>Béchamel, blanc de dinde, mozzarella</p></div></li>
+        <li class="product has-thumb" data-product="Grilled cheese" tabindex="0" role="button" aria-haspopup="dialog"><img class="thumb" src="images/carte/grilled-cheese.jpg" alt="" loading="lazy"><div><div class="menu-line"><span class="name">Grilled cheese</span><span class="dots"></span><span class="price">9,00 €</span></div><p>Cheese, crème truffe (avec ou sans bacon)</p></div></li>
+        <li class="product" data-product="Toast egg" tabindex="0" role="button" aria-haspopup="dialog"><div><div class="menu-line"><span class="name">Toast egg</span><span class="dots"></span><span class="price">9,00 €</span></div><p>Œufs brouillés, crème truffe</p></div></li>
+        <li class="product" data-product="Frites" tabindex="0" role="button" aria-haspopup="dialog"><div><div class="menu-line"><span class="name">Frites</span><span class="dots"></span><span class="price">3,00 €</span></div></div></li>
+        <li class="product" data-product="Formule toast + frites + boisson" tabindex="0" role="button" aria-haspopup="dialog"><div><div class="menu-line"><span class="name">Formule toast + frites + boisson</span><span class="dots"></span><span class="price">17,20 €</span></div><p>Un toast au choix, une portion de frites et une boisson.</p><span class="more">Voir les choix</span></div></li>
+        <li class="product" data-product="Formule brioche croque + frites + boisson" tabindex="0" role="button" aria-haspopup="dialog"><div><div class="menu-line"><span class="name">Formule brioche croque + frites + boisson</span><span class="dots"></span><span class="price">14,20 €</span></div><p>Brioche croque, une portion de frites et une boisson.</p><span class="more">Voir les choix</span></div></li>
       </ul>
     </div>
     <div class="menu-cat" id="cat-sucres">
       <h3>Sucrés</h3>
       <ul class="menu">
-        <li class="has-thumb"><img class="thumb" src="images/carte/brioche-pistacho.jpg" alt="Brioche pistacho" loading="lazy"><div><div class="menu-line"><span class="name">Brioche pistacho</span><span class="dots"></span><span class="price">9,00 €</span></div><p>Crème pistache, concassé de pistache</p></div></li>
-        <li class="has-thumb"><img class="thumb" src="images/carte/brioche-crazy.jpg" alt="Brioche crazy" loading="lazy"><div><div class="menu-line"><span class="name">Brioche crazy</span><span class="dots"></span><span class="price">9,00 €</span></div><p>Crème brûlée</p></div></li>
-        <li><div class="menu-line"><span class="name">Brioche Dubaï</span><span class="dots"></span><span class="price">9,00 €</span></div><p>Kunefe, fraise, Nutella, pistache</p></li>
-        <li><div class="menu-line"><span class="name">Brioche tiramisu</span><span class="dots"></span><span class="price">9,00 €</span></div><p>Café, crème tiramisu, chocolat</p></li>
-        <li><div class="menu-line"><span class="name">Brioche pommie</span><span class="dots"></span><span class="price">9,00 €</span></div><p>Pomme, caramel, crème maison</p></li>
-        <li><div class="menu-line"><span class="name">Brioche banane flambée</span><span class="dots"></span><span class="price">9,00 €</span></div><p>Brioche perdue, chantilly, banane flambée, caramel</p></li>
-        <li class="has-thumb"><img class="thumb" src="images/carte/brioche-citron.jpg" alt="Brioche citron" loading="lazy"><div><div class="menu-line"><span class="name">Brioche citron</span><span class="dots"></span><span class="price">9,00 €</span></div></div></li>
-        <li class="has-thumb"><img class="thumb" src="images/carte/brioche-a-composer.jpg" alt="Brioche à composer" loading="lazy"><div><div class="menu-line"><span class="name">Brioche à composer</span><span class="dots"></span><span class="price">5,00 €</span></div><p>Brioche à composer au choix</p></div></li>
-        <li class="has-thumb"><img class="thumb" src="images/carte/cookie-dough.jpg" alt="Cookie dough" loading="lazy"><div><div class="menu-line"><span class="name">Cookie dough</span><span class="dots"></span><span class="price">9,00 €</span></div><p>Cookie, Nutella, crème Bueno, chocolat blanc, Kinder Maxi</p></div></li>
-        <li class="has-thumb"><img class="thumb" src="images/carte/cup-dubai.jpg" alt="Cup Dubaï" loading="lazy"><div><div class="menu-line"><span class="name">Cup Dubaï</span><span class="dots"></span><span class="price">9,50 €</span></div></div></li>
-        <li><div class="menu-line"><span class="name">Choco banana</span><span class="dots"></span><span class="price">8,00 €</span></div></li>
-        <li class="has-thumb"><img class="thumb" src="images/carte/cup.jpg" alt="Cup" loading="lazy"><div><div class="menu-line"><span class="name">Cup</span><span class="dots"></span><span class="price">dès 5,00 €</span></div><p>Pancakes (5,00 €), gaufres ou brioches (5,50 €). Nappage au choix : Nutella, caramel, spéculoos, chocolat blanc ou Bueno white (+1 €), pistache ou fruits rouges (+1,50 €). Extras : Oreo, spéculoos, Kinder, chantilly, glace… (+1 €), banane, fraise ou pistache (+1,50 €).</p></div></li>
-        <li class="has-thumb"><img class="thumb" src="images/carte/bowl-sucre.jpg" alt="Bowl sucré" loading="lazy"><div><div class="menu-line"><span class="name">Bowl sucré</span><span class="dots"></span><span class="price">9,00 €</span></div><p>Base au choix : gaufres, pancakes ou brioches. Nappage au choix : Nutella, caramel, spéculoos, chocolat blanc ou Bueno white (+1 €), pistache ou fruits rouges (+1,50 €). Extras : Oreo, spéculoos, Kinder, chantilly, glace… (+1 €), banane, fraise ou pistache (+1,50 €).</p></div></li>
-        <li><div class="menu-line"><span class="name">Pancakes</span><span class="dots"></span><span class="price">5,00 €</span></div></li>
-        <li><div class="menu-line"><span class="name">Citron cake</span><span class="dots"></span><span class="price">3,00 €</span></div></li>
+        <li class="product has-thumb" data-product="Brioche pistacho" tabindex="0" role="button" aria-haspopup="dialog"><img class="thumb" src="images/carte/brioche-pistacho.jpg" alt="" loading="lazy"><div><div class="menu-line"><span class="name">Brioche pistacho</span><span class="dots"></span><span class="price">9,00 €</span></div><p>Crème pistache, concassé de pistache</p></div></li>
+        <li class="product has-thumb" data-product="Brioche crazy" tabindex="0" role="button" aria-haspopup="dialog"><img class="thumb" src="images/carte/brioche-crazy.jpg" alt="" loading="lazy"><div><div class="menu-line"><span class="name">Brioche crazy</span><span class="dots"></span><span class="price">9,00 €</span></div><p>Crème brûlée</p></div></li>
+        <li class="product" data-product="Brioche Dubaï" tabindex="0" role="button" aria-haspopup="dialog"><div><div class="menu-line"><span class="name">Brioche Dubaï</span><span class="dots"></span><span class="price">9,00 €</span></div><p>Kunefe, fraise, Nutella, pistache</p></div></li>
+        <li class="product" data-product="Brioche tiramisu" tabindex="0" role="button" aria-haspopup="dialog"><div><div class="menu-line"><span class="name">Brioche tiramisu</span><span class="dots"></span><span class="price">9,00 €</span></div><p>Café, crème tiramisu, chocolat</p></div></li>
+        <li class="product" data-product="Brioche pommie" tabindex="0" role="button" aria-haspopup="dialog"><div><div class="menu-line"><span class="name">Brioche pommie</span><span class="dots"></span><span class="price">9,00 €</span></div><p>Pomme, caramel, crème maison</p></div></li>
+        <li class="product" data-product="Brioche banane flambée" tabindex="0" role="button" aria-haspopup="dialog"><div><div class="menu-line"><span class="name">Brioche banane flambée</span><span class="dots"></span><span class="price">9,00 €</span></div><p>Brioche perdue, chantilly, banane flambée, caramel</p></div></li>
+        <li class="product has-thumb" data-product="Brioche citron" tabindex="0" role="button" aria-haspopup="dialog"><img class="thumb" src="images/carte/brioche-citron.jpg" alt="" loading="lazy"><div><div class="menu-line"><span class="name">Brioche citron</span><span class="dots"></span><span class="price">9,00 €</span></div></div></li>
+        <li class="product has-thumb" data-product="Brioche à composer" tabindex="0" role="button" aria-haspopup="dialog"><img class="thumb" src="images/carte/brioche-a-composer.jpg" alt="" loading="lazy"><div><div class="menu-line"><span class="name">Brioche à composer</span><span class="dots"></span><span class="price">5,00 €</span></div><p>Brioche à composer au choix</p></div></li>
+        <li class="product has-thumb" data-product="Cookie dough" tabindex="0" role="button" aria-haspopup="dialog"><img class="thumb" src="images/carte/cookie-dough.jpg" alt="" loading="lazy"><div><div class="menu-line"><span class="name">Cookie dough</span><span class="dots"></span><span class="price">9,00 €</span></div><p>Cookie, Nutella, crème Bueno, chocolat blanc, Kinder Maxi</p></div></li>
+        <li class="product has-thumb" data-product="Cup Dubaï" tabindex="0" role="button" aria-haspopup="dialog"><img class="thumb" src="images/carte/cup-dubai.jpg" alt="" loading="lazy"><div><div class="menu-line"><span class="name">Cup Dubaï</span><span class="dots"></span><span class="price">9,50 €</span></div></div></li>
+        <li class="product" data-product="Choco banana" tabindex="0" role="button" aria-haspopup="dialog"><div><div class="menu-line"><span class="name">Choco banana</span><span class="dots"></span><span class="price">8,00 €</span></div></div></li>
+        <li class="product has-thumb" data-product="Cup" tabindex="0" role="button" aria-haspopup="dialog"><img class="thumb" src="images/carte/cup.jpg" alt="" loading="lazy"><div><div class="menu-line"><span class="name">Cup</span><span class="dots"></span><span class="price">dès 5,00 €</span></div><p>Pancakes, gaufres ou brioches, avec nappage et extras au choix.</p><span class="more">Voir les choix</span></div></li>
+        <li class="product has-thumb" data-product="Bowl sucré" tabindex="0" role="button" aria-haspopup="dialog"><img class="thumb" src="images/carte/bowl-sucre.jpg" alt="" loading="lazy"><div><div class="menu-line"><span class="name">Bowl sucré</span><span class="dots"></span><span class="price">9,00 €</span></div><p>Base au choix, avec nappage et extras au choix.</p><span class="more">Voir les choix</span></div></li>
+        <li class="product" data-product="Pancakes" tabindex="0" role="button" aria-haspopup="dialog"><div><div class="menu-line"><span class="name">Pancakes</span><span class="dots"></span><span class="price">5,00 €</span></div></div></li>
+        <li class="product" data-product="Citron cake" tabindex="0" role="button" aria-haspopup="dialog"><div><div class="menu-line"><span class="name">Citron cake</span><span class="dots"></span><span class="price">3,00 €</span></div></div></li>
       </ul>
     </div>
     <div class="menu-cat" id="cat-matcha">
       <h3>Matcha</h3>
       <ul class="menu">
-        <li class="has-thumb"><img class="thumb" src="images/carte/matcha-creme-brulee.jpg" alt="Matcha crème brûlée" loading="lazy"><div><div class="menu-line"><span class="name">Matcha crème brûlée</span><span class="dots"></span><span class="price">7,00 €</span></div><p>Sirop vanille, lait vanille, matcha, crème brûlée</p></div></li>
-        <li><div class="menu-line"><span class="name">Matcha strawberry</span><span class="dots"></span><span class="price">7,00 €</span></div><p>Purée de fraise, lait d&#x27;avoine, matcha</p></li>
-        <li><div class="menu-line"><span class="name">Matcha mangue</span><span class="dots"></span><span class="price">7,00 €</span></div><p>Purée de mangue, lait d&#x27;avoine, matcha</p></li>
-        <li><div class="menu-line"><span class="name">Matcha</span><span class="dots"></span><span class="price">6,00 €</span></div></li>
+        <li class="product has-thumb" data-product="Matcha crème brûlée" tabindex="0" role="button" aria-haspopup="dialog"><img class="thumb" src="images/carte/matcha-creme-brulee.jpg" alt="" loading="lazy"><div><div class="menu-line"><span class="name">Matcha crème brûlée</span><span class="dots"></span><span class="price">7,00 €</span></div><p>Sirop vanille, lait vanille, matcha, crème brûlée</p></div></li>
+        <li class="product" data-product="Matcha strawberry" tabindex="0" role="button" aria-haspopup="dialog"><div><div class="menu-line"><span class="name">Matcha strawberry</span><span class="dots"></span><span class="price">7,00 €</span></div><p>Purée de fraise, lait d&#x27;avoine, matcha</p></div></li>
+        <li class="product" data-product="Matcha mangue" tabindex="0" role="button" aria-haspopup="dialog"><div><div class="menu-line"><span class="name">Matcha mangue</span><span class="dots"></span><span class="price">7,00 €</span></div><p>Purée de mangue, lait d&#x27;avoine, matcha</p></div></li>
+        <li class="product" data-product="Matcha" tabindex="0" role="button" aria-haspopup="dialog"><div><div class="menu-line"><span class="name">Matcha</span><span class="dots"></span><span class="price">6,00 €</span></div></div></li>
       </ul>
     </div>
     <div class="menu-cat" id="cat-froides">
       <h3>Boissons froides</h3>
       <ul class="menu">
-        <li class="has-thumb"><img class="thumb" src="images/carte/lita.jpg" alt="Lita" loading="lazy"><div><div class="menu-line"><span class="name">Lita</span><span class="dots"></span><span class="price">5,80 €</span></div><p>Limonade, rose, framboise, litchi</p></div></li>
-        <li class="has-thumb"><img class="thumb" src="images/carte/passion-paradise.jpg" alt="Passion Paradise" loading="lazy"><div><div class="menu-line"><span class="name">Passion Paradise</span><span class="dots"></span><span class="price">5,50 €</span></div><p>Limonade passion, crème passion</p></div></li>
-        <li class="has-thumb"><img class="thumb" src="images/carte/dragon-sunset.jpg" alt="Dragon Sunset" loading="lazy"><div><div class="menu-line"><span class="name">Dragon Sunset</span><span class="dots"></span><span class="price">5,00 €</span></div><p>Citronnade, mangue, thé, fruit du dragon frais</p></div></li>
-        <li class="has-thumb"><img class="thumb" src="images/carte/violetta.jpg" alt="Violetta" loading="lazy"><div><div class="menu-line"><span class="name">Violetta</span><span class="dots"></span><span class="price">5,00 €</span></div><p>Citronnade, violette</p></div></li>
-        <li class="has-thumb"><img class="thumb" src="images/carte/passiona.jpg" alt="Passiona" loading="lazy"><div><div class="menu-line"><span class="name">Passiona</span><span class="dots"></span><span class="price">5,00 €</span></div><p>Mangue, passion, grenade</p></div></li>
-        <li class="has-thumb"><img class="thumb" src="images/carte/fresh-fusion.jpg" alt="Fresh fusion" loading="lazy"><div><div class="menu-line"><span class="name">Fresh fusion</span><span class="dots"></span><span class="price">5,00 €</span></div></div></li>
-        <li class="has-thumb"><img class="thumb" src="images/carte/caramel-macchiato.jpg" alt="Caramel macchiato" loading="lazy"><div><div class="menu-line"><span class="name">Caramel macchiato</span><span class="dots"></span><span class="price">5,00 €</span></div></div></li>
-        <li class="has-thumb"><img class="thumb" src="images/carte/bubble-tea.jpg" alt="Bubble tea" loading="lazy"><div><div class="menu-line"><span class="name">Bubble tea</span><span class="dots"></span><span class="price">6,00 €</span></div><p>Boba au choix : mangue, passion, litchi, fraise, pêche. Sirop au choix : mangue, cassis, litchi, framboise, fraise, passion, melon, thé vert pêche, rose, ananas, pêche, grenadine</p></div></li>
-        <li><div class="menu-line"><span class="name">Mojito</span><span class="dots"></span><span class="price">5,50 €</span></div><p>Parfum au choix.</p></li>
-        <li><div class="menu-line"><span class="name">Refreshe</span><span class="dots"></span><span class="price">dès 3,00 €</span></div><p>Medium en canette (3,00 €) ou large (5,00 €). Sirop au choix : ananas, rose, grenadine, mangue, passion, fraise, framboise, thé vert pêche, pêche, litchi, melon ou cassis. Sirop supplémentaire : +0,50 €.</p></li>
-        <li class="has-thumb"><img class="thumb" src="images/carte/eau.jpg" alt="Eau" loading="lazy"><div><div class="menu-line"><span class="name">Eau</span><span class="dots"></span><span class="price">1,50 €</span></div><p>En canette SH Coffee.</p></div></li>
+        <li class="product has-thumb" data-product="Lita" tabindex="0" role="button" aria-haspopup="dialog"><img class="thumb" src="images/carte/lita.jpg" alt="" loading="lazy"><div><div class="menu-line"><span class="name">Lita</span><span class="dots"></span><span class="price">5,80 €</span></div><p>Limonade, rose, framboise, litchi</p></div></li>
+        <li class="product has-thumb" data-product="Passion Paradise" tabindex="0" role="button" aria-haspopup="dialog"><img class="thumb" src="images/carte/passion-paradise.jpg" alt="" loading="lazy"><div><div class="menu-line"><span class="name">Passion Paradise</span><span class="dots"></span><span class="price">5,50 €</span></div><p>Limonade passion, crème passion</p></div></li>
+        <li class="product has-thumb" data-product="Dragon Sunset" tabindex="0" role="button" aria-haspopup="dialog"><img class="thumb" src="images/carte/dragon-sunset.jpg" alt="" loading="lazy"><div><div class="menu-line"><span class="name">Dragon Sunset</span><span class="dots"></span><span class="price">5,00 €</span></div><p>Citronnade, mangue, thé, fruit du dragon frais</p></div></li>
+        <li class="product has-thumb" data-product="Violetta" tabindex="0" role="button" aria-haspopup="dialog"><img class="thumb" src="images/carte/violetta.jpg" alt="" loading="lazy"><div><div class="menu-line"><span class="name">Violetta</span><span class="dots"></span><span class="price">5,00 €</span></div><p>Citronnade, violette</p></div></li>
+        <li class="product has-thumb" data-product="Passiona" tabindex="0" role="button" aria-haspopup="dialog"><img class="thumb" src="images/carte/passiona.jpg" alt="" loading="lazy"><div><div class="menu-line"><span class="name">Passiona</span><span class="dots"></span><span class="price">5,00 €</span></div><p>Mangue, passion, grenade</p></div></li>
+        <li class="product has-thumb" data-product="Fresh fusion" tabindex="0" role="button" aria-haspopup="dialog"><img class="thumb" src="images/carte/fresh-fusion.jpg" alt="" loading="lazy"><div><div class="menu-line"><span class="name">Fresh fusion</span><span class="dots"></span><span class="price">5,00 €</span></div></div></li>
+        <li class="product has-thumb" data-product="Caramel macchiato" tabindex="0" role="button" aria-haspopup="dialog"><img class="thumb" src="images/carte/caramel-macchiato.jpg" alt="" loading="lazy"><div><div class="menu-line"><span class="name">Caramel macchiato</span><span class="dots"></span><span class="price">5,00 €</span></div></div></li>
+        <li class="product has-thumb" data-product="Bubble tea" tabindex="0" role="button" aria-haspopup="dialog"><img class="thumb" src="images/carte/bubble-tea.jpg" alt="" loading="lazy"><div><div class="menu-line"><span class="name">Bubble tea</span><span class="dots"></span><span class="price">6,00 €</span></div><p>Boba et sirop au choix.</p><span class="more">Voir les choix</span></div></li>
+        <li class="product" data-product="Mojito" tabindex="0" role="button" aria-haspopup="dialog"><div><div class="menu-line"><span class="name">Mojito</span><span class="dots"></span><span class="price">5,50 €</span></div><p>Parfum au choix.</p></div></li>
+        <li class="product" data-product="Refreshe" tabindex="0" role="button" aria-haspopup="dialog"><div><div class="menu-line"><span class="name">Refreshe</span><span class="dots"></span><span class="price">dès 3,00 €</span></div><p>Sirop au choix et eau gazeuse, en canette ou en grand format.</p><span class="more">Voir les choix</span></div></li>
+        <li class="product has-thumb" data-product="Eau" tabindex="0" role="button" aria-haspopup="dialog"><img class="thumb" src="images/carte/eau.jpg" alt="" loading="lazy"><div><div class="menu-line"><span class="name">Eau</span><span class="dots"></span><span class="price">1,50 €</span></div><p>En canette SH Coffee.</p></div></li>
       </ul>
     </div>
     <div class="menu-cat" id="cat-chaudes">
       <h3>Boissons chaudes</h3>
       <ul class="menu">
-        <li><div class="menu-line"><span class="name">Cappuccino</span><span class="dots"></span><span class="price">4,00 €</span></div></li>
-        <li><div class="menu-line"><span class="name">Chocolat chaud</span><span class="dots"></span><span class="price">4,00 €</span></div></li>
-        <li><div class="menu-line"><span class="name">Flat white</span><span class="dots"></span><span class="price">3,50 €</span></div></li>
-        <li><div class="menu-line"><span class="name">Café au lait</span><span class="dots"></span><span class="price">3,20 €</span></div></li>
-        <li><div class="menu-line"><span class="name">Café</span><span class="dots"></span><span class="price">3,00 €</span></div></li>
-        <li><div class="menu-line"><span class="name">Expresso</span><span class="dots"></span><span class="price">3,00 €</span></div></li>
-        <li><div class="menu-line"><span class="name">Americano</span><span class="dots"></span><span class="price">3,00 €</span></div></li>
-        <li><div class="menu-line"><span class="name">Thé</span><span class="dots"></span><span class="price">3,00 €</span></div></li>
+        <li class="product" data-product="Cappuccino" tabindex="0" role="button" aria-haspopup="dialog"><div><div class="menu-line"><span class="name">Cappuccino</span><span class="dots"></span><span class="price">4,00 €</span></div></div></li>
+        <li class="product" data-product="Chocolat chaud" tabindex="0" role="button" aria-haspopup="dialog"><div><div class="menu-line"><span class="name">Chocolat chaud</span><span class="dots"></span><span class="price">4,00 €</span></div></div></li>
+        <li class="product" data-product="Flat white" tabindex="0" role="button" aria-haspopup="dialog"><div><div class="menu-line"><span class="name">Flat white</span><span class="dots"></span><span class="price">3,50 €</span></div></div></li>
+        <li class="product" data-product="Café au lait" tabindex="0" role="button" aria-haspopup="dialog"><div><div class="menu-line"><span class="name">Café au lait</span><span class="dots"></span><span class="price">3,20 €</span></div></div></li>
+        <li class="product" data-product="Café" tabindex="0" role="button" aria-haspopup="dialog"><div><div class="menu-line"><span class="name">Café</span><span class="dots"></span><span class="price">3,00 €</span></div></div></li>
+        <li class="product" data-product="Expresso" tabindex="0" role="button" aria-haspopup="dialog"><div><div class="menu-line"><span class="name">Expresso</span><span class="dots"></span><span class="price">3,00 €</span></div></div></li>
+        <li class="product" data-product="Americano" tabindex="0" role="button" aria-haspopup="dialog"><div><div class="menu-line"><span class="name">Americano</span><span class="dots"></span><span class="price">3,00 €</span></div></div></li>
+        <li class="product" data-product="Thé" tabindex="0" role="button" aria-haspopup="dialog"><div><div class="menu-line"><span class="name">Thé</span><span class="dots"></span><span class="price">3,00 €</span></div></div></li>
       </ul>
     </div>
     <p class="menu-note">Prix sur place, susceptibles d'évoluer. Sur Uber Eats, les prix varient et sont différents de ceux du restaurant.</p>
@@ -563,7 +598,95 @@
   </div>
 </footer>
 
-<script>
+<div class="sheet-backdrop" data-close></div>
+<div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-title" hidden>
+  <button class="sheet-close" type="button" aria-label="Fermer" data-close>&times;</button>
+  <div class="sheet-scroll">
+    <img class="sheet-img" alt="">
+    <div class="sheet-body">
+      <div class="sheet-head"><h3 id="sheet-title"></h3><span class="sheet-price"></span></div>
+      <p class="sheet-desc"></p>
+      <div class="sheet-groups"></div>
+      <p class="sheet-note">Prix sur place. Sur Uber Eats, les prix varient.</p>
+    </div>
+  </div>
+</div>
+<script type="application/json" id="products-data">{"Toast italien": {"price": "13,90 €", "desc": "Stracciatella, roquette, oignons caramélisés, parmesan, charcuterie de saison", "img": "images/produits/toast-italien.jpg", "large": true, "groups": []}, "Toast saumon": {"price": "13,90 €", "desc": "Cream cheese, sauce concombre, concombre, saumon, parmesan, truffe", "img": "images/carte/toast-saumon.jpg", "large": false, "groups": []}, "Le Cheesy Melt": {"price": "12,90 €", "desc": "Steak, salade, cheddar, sauce au choix", "img": "images/carte/cheesy-melt.jpg", "large": false, "groups": []}, "Le Smoked": {"price": "12,90 €", "desc": "", "img": "images/produits/le-smoked.jpg", "large": true, "groups": []}, "Poulet pesto": {"price": "12,90 €", "desc": "Poulet mariné, mayonnaise truffe, pesto, parmesan", "img": "images/carte/poulet-pesto.jpg", "large": false, "groups": []}, "Toast chicken": {"price": "12,80 €", "desc": "Poulet tenders, sauce parmesan, parmesan, salade, bacon", "img": null, "large": false, "groups": []}, "Toast savoyard": {"price": "12,80 €", "desc": "Steak, raclette, lardons, bacon, sauce moutarde-miel", "img": "images/carte/toast-savoyard.jpg", "large": false, "groups": []}, "Panuzzo": {"price": "12,00 €", "desc": "Stracciatella, double charcuterie, pesto", "img": null, "large": false, "groups": []}, "Bowl salé": {"price": "11,00 €", "desc": "", "img": null, "large": false, "groups": []}, "Pink Burger": {"price": "10,00 €", "desc": "", "img": null, "large": false, "groups": []}, "Brioche croque": {"price": "9,00 €", "desc": "Béchamel, blanc de dinde, mozzarella", "img": null, "large": false, "groups": []}, "Grilled cheese": {"price": "9,00 €", "desc": "Cheese, crème truffe (avec ou sans bacon)", "img": "images/carte/grilled-cheese.jpg", "large": false, "groups": []}, "Toast egg": {"price": "9,00 €", "desc": "Œufs brouillés, crème truffe", "img": null, "large": false, "groups": []}, "Frites": {"price": "3,00 €", "desc": "", "img": null, "large": false, "groups": []}, "Formule toast + frites + boisson": {"price": "17,20 €", "desc": "Un toast au choix, une portion de frites et une boisson.", "img": null, "large": false, "groups": [{"title": "Toast", "note": "1 au choix", "items": [{"name": "Cheesy Melt", "price": ""}, {"name": "Chicken", "price": ""}, {"name": "Italien", "price": ""}, {"name": "Poulet pesto", "price": ""}, {"name": "Savoyard", "price": ""}, {"name": "Smoked", "price": ""}]}, {"title": "Frites", "note": "Comprises", "items": [{"name": "Frites", "price": ""}]}, {"title": "Boisson", "note": "1 au choix · prix de la formule", "items": [{"name": "Passiona", "price": "17,20 €"}, {"name": "Violetta", "price": "17,20 €"}, {"name": "Refreshe (sirop au choix)", "price": "17,20 €"}, {"name": "Dragon Sunset", "price": "17,20 €"}, {"name": "Fresh fusion", "price": "17,20 €"}, {"name": "Lita", "price": "17,90 €"}, {"name": "Bubble tea", "price": "17,90 €"}, {"name": "Passion Paradise", "price": "17,90 €"}, {"name": "Mojito (au choix)", "price": "17,90 €"}, {"name": "Eau (Chicken, Cheesy Melt)", "price": "17,00 €"}, {"name": "Eau (autres toasts)", "price": "17,20 €"}]}]}, "Formule brioche croque + frites + boisson": {"price": "14,20 €", "desc": "Brioche croque, une portion de frites et une boisson.", "img": null, "large": false, "groups": [{"title": "Frites", "note": "Comprises", "items": [{"name": "Frites", "price": ""}]}, {"title": "Boisson", "note": "1 au choix · prix de la formule", "items": [{"name": "Passiona", "price": "14,20 €"}, {"name": "Violetta", "price": "14,20 €"}, {"name": "Refreshe (sirop au choix)", "price": "14,20 €"}, {"name": "Dragon Sunset", "price": "14,20 €"}, {"name": "Fresh fusion", "price": "14,20 €"}, {"name": "Lita", "price": "14,90 €"}, {"name": "Bubble tea", "price": "14,90 €"}, {"name": "Passion Paradise", "price": "14,90 €"}, {"name": "Mojito (au choix)", "price": "14,90 €"}, {"name": "Eau", "price": "14,00 €"}]}]}, "Brioche pistacho": {"price": "9,00 €", "desc": "Crème pistache, concassé de pistache", "img": "images/carte/brioche-pistacho.jpg", "large": false, "groups": []}, "Brioche crazy": {"price": "9,00 €", "desc": "Crème brûlée", "img": "images/carte/brioche-crazy.jpg", "large": false, "groups": []}, "Brioche Dubaï": {"price": "9,00 €", "desc": "Kunefe, fraise, Nutella, pistache", "img": null, "large": false, "groups": []}, "Brioche tiramisu": {"price": "9,00 €", "desc": "Café, crème tiramisu, chocolat", "img": null, "large": false, "groups": []}, "Brioche pommie": {"price": "9,00 €", "desc": "Pomme, caramel, crème maison", "img": null, "large": false, "groups": []}, "Brioche banane flambée": {"price": "9,00 €", "desc": "Brioche perdue, chantilly, banane flambée, caramel", "img": null, "large": false, "groups": []}, "Brioche citron": {"price": "9,00 €", "desc": "", "img": "images/produits/brioche-citron.jpg", "large": true, "groups": []}, "Brioche à composer": {"price": "5,00 €", "desc": "Brioche à composer au choix", "img": "images/carte/brioche-a-composer.jpg", "large": false, "groups": []}, "Cookie dough": {"price": "9,00 €", "desc": "Cookie, Nutella, crème Bueno, chocolat blanc, Kinder Maxi", "img": "images/produits/cookie-dough.jpg", "large": true, "groups": []}, "Cup Dubaï": {"price": "9,50 €", "desc": "", "img": "images/carte/cup-dubai.jpg", "large": false, "groups": []}, "Choco banana": {"price": "8,00 €", "desc": "", "img": null, "large": false, "groups": []}, "Cup": {"price": "dès 5,00 €", "desc": "Pancakes, gaufres ou brioches, avec nappage et extras au choix.", "img": "images/carte/cup.jpg", "large": false, "groups": [{"title": "Base", "note": "1 au choix", "items": [{"name": "Pancakes", "price": "5,00 €"}, {"name": "Gaufres", "price": "5,50 €"}, {"name": "Brioches", "price": "5,50 €"}]}, {"title": "Nappage", "note": "1 au choix", "items": [{"name": "Nutella", "price": "+1,00 €"}, {"name": "Coulis caramel", "price": "+1,00 €"}, {"name": "Coulis spéculoos", "price": "+1,00 €"}, {"name": "Coulis chocolat blanc", "price": "+1,00 €"}, {"name": "Coulis Bueno white", "price": "+1,00 €"}, {"name": "Coulis pistache", "price": "+1,50 €"}, {"name": "Coulis fruits rouges", "price": "+1,50 €"}, {"name": "Sans nappage", "price": ""}]}, {"title": "Extras", "note": "En option", "items": [{"name": "Banane", "price": "+1,50 €"}, {"name": "Fraise", "price": "+1,50 €"}, {"name": "Pistache", "price": "+1,50 €"}, {"name": "Spéculoos", "price": "+1,00 €"}, {"name": "Oreo", "price": "+1,00 €"}, {"name": "Kinder maxi", "price": "+1,00 €"}, {"name": "Kinder country", "price": "+1,00 €"}, {"name": "Kinder Bueno", "price": "+1,00 €"}, {"name": "Kinder Bueno white", "price": "+1,00 €"}, {"name": "Chantilly", "price": "+1,00 €"}, {"name": "Glace", "price": "+1,00 €"}, {"name": "Sans extra", "price": ""}]}]}, "Bowl sucré": {"price": "9,00 €", "desc": "Base au choix, avec nappage et extras au choix.", "img": "images/carte/bowl-sucre.jpg", "large": false, "groups": [{"title": "Base", "note": "Comprise, 1 au choix", "items": [{"name": "Gaufres", "price": ""}, {"name": "Pancakes", "price": ""}, {"name": "Brioches", "price": ""}]}, {"title": "Nappage", "note": "1 au choix", "items": [{"name": "Nutella", "price": "+1,00 €"}, {"name": "Coulis caramel", "price": "+1,00 €"}, {"name": "Coulis spéculoos", "price": "+1,00 €"}, {"name": "Coulis chocolat blanc", "price": "+1,00 €"}, {"name": "Coulis Bueno white", "price": "+1,00 €"}, {"name": "Coulis pistache", "price": "+1,50 €"}, {"name": "Coulis fruits rouges", "price": "+1,50 €"}, {"name": "Sans nappage", "price": ""}]}, {"title": "Extras", "note": "En option", "items": [{"name": "Banane", "price": "+1,50 €"}, {"name": "Fraise", "price": "+1,50 €"}, {"name": "Pistache", "price": "+1,50 €"}, {"name": "Spéculoos", "price": "+1,00 €"}, {"name": "Oreo", "price": "+1,00 €"}, {"name": "Kinder maxi", "price": "+1,00 €"}, {"name": "Kinder country", "price": "+1,00 €"}, {"name": "Kinder Bueno", "price": "+1,00 €"}, {"name": "Kinder Bueno white", "price": "+1,00 €"}, {"name": "Chantilly", "price": "+1,00 €"}, {"name": "Glace", "price": "+1,00 €"}, {"name": "Sans extra", "price": ""}]}]}, "Pancakes": {"price": "5,00 €", "desc": "", "img": null, "large": false, "groups": []}, "Citron cake": {"price": "3,00 €", "desc": "", "img": null, "large": false, "groups": []}, "Matcha crème brûlée": {"price": "7,00 €", "desc": "Sirop vanille, lait vanille, matcha, crème brûlée", "img": "images/carte/matcha-creme-brulee.jpg", "large": false, "groups": []}, "Matcha strawberry": {"price": "7,00 €", "desc": "Purée de fraise, lait d'avoine, matcha", "img": null, "large": false, "groups": []}, "Matcha mangue": {"price": "7,00 €", "desc": "Purée de mangue, lait d'avoine, matcha", "img": null, "large": false, "groups": []}, "Matcha": {"price": "6,00 €", "desc": "", "img": null, "large": false, "groups": []}, "Lita": {"price": "5,80 €", "desc": "Limonade, rose, framboise, litchi", "img": "images/produits/lita.jpg", "large": true, "groups": []}, "Passion Paradise": {"price": "5,50 €", "desc": "Limonade passion, crème passion", "img": "images/produits/passion-paradise.jpg", "large": true, "groups": []}, "Dragon Sunset": {"price": "5,00 €", "desc": "Citronnade, mangue, thé, fruit du dragon frais", "img": "images/carte/dragon-sunset.jpg", "large": false, "groups": []}, "Violetta": {"price": "5,00 €", "desc": "Citronnade, violette", "img": "images/carte/violetta.jpg", "large": false, "groups": []}, "Passiona": {"price": "5,00 €", "desc": "Mangue, passion, grenade", "img": "images/produits/passiona.jpg", "large": true, "groups": []}, "Fresh fusion": {"price": "5,00 €", "desc": "", "img": "images/carte/fresh-fusion.jpg", "large": false, "groups": []}, "Caramel macchiato": {"price": "5,00 €", "desc": "", "img": "images/produits/caramel-macchiato.jpg", "large": true, "groups": []}, "Bubble tea": {"price": "6,00 €", "desc": "Boba et sirop au choix.", "img": "images/produits/bubble-tea.jpg", "large": true, "groups": [{"title": "Boba", "note": "1 au choix", "items": [{"name": "Mangue", "price": ""}, {"name": "Passion", "price": ""}, {"name": "Litchi", "price": ""}, {"name": "Fraise", "price": ""}, {"name": "Pêche", "price": ""}]}, {"title": "Sirop", "note": "1 au choix", "items": [{"name": "Mangue", "price": ""}, {"name": "Cassis", "price": ""}, {"name": "Litchi", "price": ""}, {"name": "Framboise", "price": ""}, {"name": "Fraise", "price": ""}, {"name": "Passion", "price": ""}, {"name": "Melon", "price": ""}, {"name": "Thé vert pêche", "price": ""}, {"name": "Rose", "price": ""}, {"name": "Ananas", "price": ""}, {"name": "Pêche", "price": ""}, {"name": "Grenadine", "price": ""}]}]}, "Mojito": {"price": "5,50 €", "desc": "Parfum au choix.", "img": null, "large": false, "groups": []}, "Refreshe": {"price": "dès 3,00 €", "desc": "Sirop au choix et eau gazeuse, en canette ou en grand format.", "img": null, "large": false, "groups": [{"title": "Taille", "note": "1 au choix", "items": [{"name": "Medium (canette)", "price": "3,00 €"}, {"name": "Large", "price": "5,00 €"}]}, {"title": "Sirop", "note": "Compris, 1 au choix", "items": [{"name": "Ananas", "price": ""}, {"name": "Rose", "price": ""}, {"name": "Grenadine", "price": ""}, {"name": "Mangue", "price": ""}, {"name": "Passion", "price": ""}, {"name": "Fraise", "price": ""}, {"name": "Framboise", "price": ""}, {"name": "Thé vert pêche", "price": ""}, {"name": "Pêche", "price": ""}, {"name": "Litchi", "price": ""}, {"name": "Melon", "price": ""}, {"name": "Cassis", "price": ""}]}, {"title": "Sirop supplémentaire", "note": "En option", "items": [{"name": "Ananas", "price": "+0,50 €"}, {"name": "Rose", "price": "+0,50 €"}, {"name": "Grenadine", "price": "+0,50 €"}, {"name": "Mangue", "price": "+0,50 €"}, {"name": "Passion", "price": "+0,50 €"}, {"name": "Fraise", "price": "+0,50 €"}, {"name": "Framboise", "price": "+0,50 €"}, {"name": "Thé vert pêche", "price": "+0,50 €"}, {"name": "Pêche", "price": "+0,50 €"}, {"name": "Litchi", "price": "+0,50 €"}, {"name": "Melon", "price": "+0,50 €"}, {"name": "Cassis", "price": "+0,50 €"}]}]}, "Eau": {"price": "1,50 €", "desc": "En canette SH Coffee.", "img": "images/produits/eau.jpg", "large": true, "groups": []}, "Cappuccino": {"price": "4,00 €", "desc": "", "img": null, "large": false, "groups": []}, "Chocolat chaud": {"price": "4,00 €", "desc": "", "img": null, "large": false, "groups": []}, "Flat white": {"price": "3,50 €", "desc": "", "img": null, "large": false, "groups": []}, "Café au lait": {"price": "3,20 €", "desc": "", "img": null, "large": false, "groups": []}, "Café": {"price": "3,00 €", "desc": "", "img": null, "large": false, "groups": []}, "Expresso": {"price": "3,00 €", "desc": "", "img": null, "large": false, "groups": []}, "Americano": {"price": "3,00 €", "desc": "", "img": null, "large": false, "groups": []}, "Thé": {"price": "3,00 €", "desc": "", "img": null, "large": false, "groups": []}}</script>
+
+<script id="main-script">
+  // Fiche produit : s'ouvre au clic sur un produit de la carte
+  (function () {
+    var products = JSON.parse(document.getElementById("products-data").textContent);
+    var root = document.documentElement;
+    var sheet = document.querySelector(".sheet");
+    var img = sheet.querySelector(".sheet-img");
+    var groupsEl = sheet.querySelector(".sheet-groups");
+    var lastFocus = null;
+
+    function el(tag, cls, text) {
+      var n = document.createElement(tag);
+      if (cls) n.className = cls;
+      if (text) n.textContent = text;
+      return n;
+    }
+
+    function open(name, trigger) {
+      var p = products[name];
+      if (!p) return;
+      lastFocus = trigger;
+      sheet.querySelector("#sheet-title").textContent = name;
+      sheet.querySelector(".sheet-price").textContent = p.price;
+      var desc = sheet.querySelector(".sheet-desc");
+      desc.textContent = p.desc || "";
+      desc.hidden = !p.desc;
+      img.hidden = !p.img;
+      if (p.img) {
+        img.src = p.img;
+        img.alt = name;
+        img.classList.toggle("small", !p.large);
+      }
+      groupsEl.innerHTML = "";
+      p.groups.forEach(function (g) {
+        var box = el("div", "sheet-group");
+        var head = el("div", "sheet-group-head");
+        head.appendChild(el("h4", "", g.title));
+        if (g.note) head.appendChild(el("span", "", g.note));
+        box.appendChild(head);
+        var ul = el("ul");
+        g.items.forEach(function (it) {
+          var li = el("li");
+          li.appendChild(el("span", "", it.name));
+          li.appendChild(el("span", "", it.price || ""));
+          ul.appendChild(li);
+        });
+        box.appendChild(ul);
+        groupsEl.appendChild(box);
+      });
+      sheet.hidden = false;
+      sheet.querySelector(".sheet-scroll").scrollTop = 0;
+      requestAnimationFrame(function () { root.classList.add("sheet-open"); });
+      document.body.style.overflow = "hidden";
+      sheet.querySelector(".sheet-close").focus({ preventScroll: true });
+    }
+
+    function close() {
+      if (!root.classList.contains("sheet-open")) return;
+      root.classList.remove("sheet-open");
+      document.body.style.overflow = "";
+      setTimeout(function () { if (!root.classList.contains("sheet-open")) sheet.hidden = true; }, 300);
+      if (lastFocus) lastFocus.focus({ preventScroll: true });
+    }
+
+    document.querySelectorAll("[data-product]").forEach(function (item) {
+      item.addEventListener("click", function () { open(item.getAttribute("data-product"), item); });
+      item.addEventListener("keydown", function (e) {
+        if (e.key === "Enter" || e.key === " ") { e.preventDefault(); open(item.getAttribute("data-product"), item); }
+      });
+    });
+    document.querySelectorAll("[data-close]").forEach(function (b) { b.addEventListener("click", close); });
+    document.addEventListener("keydown", function (e) { if (e.key === "Escape") close(); });
+  })();
+
   // Rideau d'accueil : retiré à la fin de l'animation, ou au clic pour passer
   var curtain = document.querySelector(".curtain");
   if (document.documentElement.classList.contains("intro")) {
