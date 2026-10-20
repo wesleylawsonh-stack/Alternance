@@ -4,13 +4,88 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>SH Coffee — Cergy</title>
-  <meta name="description" content="SH COFFEE, cafétéria moderne à Cergy pensée pour les amateurs de pauses gourmandes : brioches garnies, cookies, pâtisseries, boissons. Sur place, à emporter ou en livraison.">
+  <meta name="description" content="SH COFFEE, cafétéria gourmande à Cergy : brioches perdues, toasts, matcha, bubble tea et boissons fraîches. Sur place, à emporter ou en livraison. Ouvert jusqu’à 4h le vendredi et le samedi.">
+  <!-- Adresse du site : à remplacer partout (ici, sitemap.xml, robots.txt) par le nom de domaine définitif -->
+  <link rel="canonical" href="https://sh-coffee.netlify.app/">
+  <meta name="theme-color" content="#1f1b18">
   <link rel="icon" href="favicon.png">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+
+  <!-- Aperçu de partage (WhatsApp, Instagram, Facebook, SMS…) -->
+  <meta property="og:type" content="website">
+  <meta property="og:locale" content="fr_FR">
+  <meta property="og:site_name" content="SH Coffee">
+  <meta property="og:title" content="SH Coffee — Cafétéria gourmande à Cergy">
+  <meta property="og:description" content="Brioches perdues, toasts, matcha et bubble tea. Sur place, à emporter ou en livraison. 1 Rue Francis Combe, Cergy.">
+  <meta property="og:url" content="https://sh-coffee.netlify.app/">
+  <meta property="og:image" content="https://sh-coffee.netlify.app/images/partage.jpg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Logo SH Coffee et la salle du restaurant">
+  <meta name="twitter:card" content="summary_large_image">
   <script>
     document.documentElement.classList.add("js");
     if (!(window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches)) document.documentElement.classList.add("intro");
   </script>
   <link rel="stylesheet" href="fonts/fonts.css">
+  <!-- Informations du restaurant lisibles par Google -->
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "CafeOrCoffeeShop",
+  "name": "SH Coffee",
+  "url": "https://sh-coffee.netlify.app/",
+  "image": "https://sh-coffee.netlify.app/images/partage.jpg",
+  "logo": "https://sh-coffee.netlify.app/images/logo.png",
+  "telephone": "+33698521729",
+  "address": {
+    "@type": "PostalAddress",
+    "streetAddress": "1 Rue Francis Combe",
+    "postalCode": "95000",
+    "addressLocality": "Cergy",
+    "addressCountry": "FR"
+  },
+  "servesCuisine": [
+    "Café",
+    "Brunch",
+    "Pâtisserie",
+    "Bubble tea"
+  ],
+  "menu": "https://sh-coffee.netlify.app/#carte",
+  "acceptsReservations": false,
+  "hasMap": "https://www.google.com/maps/search/?api=1&query=SH+COFFEE+1+Rue+Francis+Combe+95000+Cergy",
+  "sameAs": [
+    "https://www.instagram.com/sh.coffee95/",
+    "https://www.tiktok.com/@shcoffee_",
+    "https://www.ubereats.com/fr/store/sh-coffee/3UKWVB1ZSmG7wlAD5Hk4nA"
+  ],
+  "openingHoursSpecification": [
+    {
+      "@type": "OpeningHoursSpecification",
+      "dayOfWeek": [
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+        "Sunday"
+      ],
+      "opens": "11:30",
+      "closes": "02:30"
+    },
+    {
+      "@type": "OpeningHoursSpecification",
+      "dayOfWeek": "Friday",
+      "opens": "15:30",
+      "closes": "04:00"
+    },
+    {
+      "@type": "OpeningHoursSpecification",
+      "dayOfWeek": "Saturday",
+      "opens": "11:30",
+      "closes": "04:00"
+    }
+  ]
+}
+  </script>
   <style>
     :root {
       --intro: 0s;
