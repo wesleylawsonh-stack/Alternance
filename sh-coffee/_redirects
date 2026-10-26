@@ -1,6 +1,0 @@
-# Redirections Netlify
-#
-# Quand le nom de domaine sera branché, Netlify redirige automatiquement
-# www.<domaine> vers <domaine> (ou l'inverse) selon le « Primary domain »
-# choisi dans Domain management. Si besoin de forcer, enlever le # :
-# https://www.shcoffee.fr/*  https://shcoffee.fr/:splat  301!
